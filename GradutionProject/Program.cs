@@ -40,7 +40,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-string connectionString = $"Data Source={Environment.MachineName}\\MSSQLSQLSERVERTP; Database=GradutionProject; User ID=sa; Password=sas; Trusted_Connection=False;MultipleActiveResultSets=true;Encrypt=no";
+string connectionString = $"Data Source={Environment.MachineName}; Database=GradutionProject;  Trusted_Connection=true;MultipleActiveResultSets=true;Encrypt=no";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
