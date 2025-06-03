@@ -4,6 +4,7 @@ using GradutionProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GradutionProject.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250603090959_gasdfsad")]
+    partial class gasdfsad
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,6 +53,8 @@ namespace GradutionProject.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CollegeId");
+
                     b.ToTable("Admins");
 
                     b.HasData(
@@ -71,9 +76,6 @@ namespace GradutionProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AdminId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -86,10 +88,6 @@ namespace GradutionProject.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AdminId")
-                        .IsUnique()
-                        .HasFilter("[AdminId] IS NOT NULL");
 
                     b.ToTable("Colleges");
                 });
@@ -260,13 +258,13 @@ namespace GradutionProject.Migrations
                     b.ToTable("Students");
                 });
 
-            modelBuilder.Entity("GradutionProject.Entities.College", b =>
+            modelBuilder.Entity("GradutionProject.Entities.Admin", b =>
                 {
-                    b.HasOne("GradutionProject.Entities.Admin", "Admin")
-                        .WithOne("College")
-                        .HasForeignKey("GradutionProject.Entities.College", "AdminId");
+                    b.HasOne("GradutionProject.Entities.College", "College")
+                        .WithMany("Admins")
+                        .HasForeignKey("CollegeId");
 
-                    b.Navigation("Admin");
+                    b.Navigation("College");
                 });
 
             modelBuilder.Entity("GradutionProject.Entities.Cours", b =>
@@ -320,14 +318,10 @@ namespace GradutionProject.Migrations
                     b.Navigation("College");
                 });
 
-            modelBuilder.Entity("GradutionProject.Entities.Admin", b =>
-                {
-                    b.Navigation("College")
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GradutionProject.Entities.College", b =>
                 {
+                    b.Navigation("Admins");
+
                     b.Navigation("Professsors");
 
                     b.Navigation("Students");

@@ -11,7 +11,7 @@ namespace GradutionProject.Entities
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
         public Gender? Gender { get; set; }
-        public string? College { get; set; }
+        public int YearOfStudy { get; set; }
         public string? PhoneNumber { get; set; }
         public DateTime? Birth { get; set; }
         public DateTime? CertificateDate { get; set; }
@@ -20,5 +20,9 @@ namespace GradutionProject.Entities
         public byte[]? CertificateImg { get; set; }
         public byte[]? PersonalPhoto { get; set; }
         public byte[]? Invoice { get; set; }
+
+        ///Relations
+        public int? CollegeId { get; set; }
+        public College College {get; set;}
     }
 }

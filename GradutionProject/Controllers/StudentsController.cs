@@ -54,7 +54,7 @@ namespace GradutionProject.Controllers
                 Email = dto.Email,
                 PasswordHash = dto.PasswordHash,
                 Gender = dto.Gender.HasValue ? (Gender?)dto.Gender : null,
-                College = dto.College,
+                CollegeId = dto.College,
                 PhoneNumber = dto.PhoneNumber,
                 Birth = dto.Birth,
                 CertificateDate = dto.CertificateDate,
@@ -81,7 +81,7 @@ namespace GradutionProject.Controllers
             student.Email = dto.Email;
             student.PasswordHash = dto.PasswordHash;
             student.Gender = dto.Gender.HasValue ? (Gender?)dto.Gender : null;
-            student.College = dto.College;
+            student.CollegeId = dto.College;
             student.PhoneNumber = dto.PhoneNumber;
             student.Birth = dto.Birth;
             student.CertificateDate = dto.CertificateDate;
@@ -133,7 +133,7 @@ namespace GradutionProject.Controllers
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
         public int? Gender { get; set; } // 0: Male, 1: Female
-        public string? College { get; set; }
+        public int? College { get; set; }
         public string? PhoneNumber { get; set; }
         public DateTime? Birth { get; set; }
         public DateTime? CertificateDate { get; set; }
