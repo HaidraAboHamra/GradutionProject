@@ -7,7 +7,7 @@ using System;
 
 namespace GradutionProject.Controllers;
 
-[Authorize]
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CollegesController : ControllerBase
@@ -26,11 +26,18 @@ public class CollegesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(College college)
+    public async Task<IActionResult> Create(CollegeDto dto)
     {
+        var college = new College
+        {
+            Name=dto.Name,
+            Description=dto.Description,
+            YearOfStudy=dto.YearOfStudy,
+            AdminId=dto.AdminId,
+        };
         _context.Colleges.Add(college);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = college.Id }, college);
+        return CreatedAtAction(nameof(GetById), new { id = college.Id }, dto);
     }
 
     [HttpPut("{id}")]
@@ -50,5 +57,13 @@ public class CollegesController : ControllerBase
         _context.Colleges.Remove(college);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+    public class CollegeDto
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int YearOfStudy { get; set; }
+        public int AdminId { get; set; }
+
     }
 }

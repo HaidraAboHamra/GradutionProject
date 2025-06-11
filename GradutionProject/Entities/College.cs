@@ -12,10 +12,10 @@ namespace GradutionProject.Entities
         public int YearOfStudy { get; set; }
 
         //Relations
-        public List<Student> Students { get; set; }
+        public List<Student> Students { get; set; } = new List<Student>();
         public int? AdminId { get; set; }
         [ForeignKey("AdminId")]
-        public Admin Admin { get; set; }
-        public List<Professsor> Professsors { get; set; }
+        public Admin? Admin { get; set; }
+        public List<Professsor> Professsors { get; set; } = new List<Professsor>();
     }
 }
