@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GradutionProject.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250603091849_asgfs")]
-    partial class asgfs
+    [Migration("20250611150718_initialecreate")]
+    partial class initialecreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,9 +32,6 @@ namespace GradutionProject.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CollegeId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -325,8 +322,7 @@ namespace GradutionProject.Migrations
 
             modelBuilder.Entity("GradutionProject.Entities.Admin", b =>
                 {
-                    b.Navigation("College")
-                        .IsRequired();
+                    b.Navigation("College");
                 });
 
             modelBuilder.Entity("GradutionProject.Entities.College", b =>

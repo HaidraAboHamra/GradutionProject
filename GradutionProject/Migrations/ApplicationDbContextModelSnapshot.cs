@@ -30,9 +30,6 @@ namespace GradutionProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CollegeId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -322,8 +319,7 @@ namespace GradutionProject.Migrations
 
             modelBuilder.Entity("GradutionProject.Entities.Admin", b =>
                 {
-                    b.Navigation("College")
-                        .IsRequired();
+                    b.Navigation("College");
                 });
 
             modelBuilder.Entity("GradutionProject.Entities.College", b =>

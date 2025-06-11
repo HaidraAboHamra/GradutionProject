@@ -1,5 +1,6 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
+using GradutionProject.Entities.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -42,13 +43,20 @@ public class AdminsController : ControllerBase
 
     // POST: api/Admins
     [HttpPost]
-    public async Task<ActionResult<Admin>> PostAdmin(Admin admin)
+    public async Task<ActionResult> PostAdmin(AdminDto dto)
     {
+        var admin = new Admin
+        {
+            Name = dto.Name,
+            Email = dto.Email,
+            Password = dto.Password,
+            Phone = dto.Phone,
+        };
         admin.Password = _passwordHasher.HashPassword(admin, admin.Password);
         _context.Admins.Add(admin);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetAdmin), new { id = admin.Id }, admin);
+        return Ok(dto);
     }
 
     // PUT: api/Admins/5
@@ -100,5 +108,13 @@ public class AdminsController : ControllerBase
     private bool AdminExists(int id)
     {
         return _context.Admins.Any(e => e.Id == id);
+    }
+    public class AdminDto
+    {
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string Phone { get; set; }
+
     }
 }

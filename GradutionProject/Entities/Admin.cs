@@ -12,7 +12,6 @@ namespace GradutionProject.Entities
         public string? Password { get; set; }
 
         ///Relations
-        public int? CollegeId { get; set; }
-        public College College { get; set; }
+        public College? College { get; set; }
     }
 }
