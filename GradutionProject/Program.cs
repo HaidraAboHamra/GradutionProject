@@ -22,13 +22,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-var key = Encoding.ASCII.GetBytes("H4rDToGu3s$JwtKey!_SuperSecret_1234567890");
+var key = Encoding.ASCII.GetBytes("ThisIsASecureJwtKey_WithMoreThan64Characters_LongAndSafe_1234567890!");
 
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = true;
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {

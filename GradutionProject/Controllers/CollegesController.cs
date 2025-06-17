@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace GradutionProject.Controllers;
 
@@ -23,6 +25,30 @@ public class CollegesController : ControllerBase
     {
         var college = await _context.Colleges.Include(c => c.Students).Include(c => c.Professsors).FirstOrDefaultAsync(c => c.Id == id);
         return college == null ? NotFound() : Ok(college);
+    }
+    [Authorize]
+    [HttpGet("mycollege")]
+    public async Task<IActionResult> GetMyCollege()
+    {
+        var claims = User.Claims.ToList();
+
+        foreach (var claim in claims)
+        {
+            Console.WriteLine($"{claim.Type} : {claim.Value}");
+        }
+
+        var role = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+        var collegeId = claims.FirstOrDefault(c => c.Type == "CollegeId")?.Value;
+
+        if (string.IsNullOrEmpty(collegeId) || !int.TryParse(collegeId, out var id))
+            return Unauthorized(new { message = "CollegeId not found in token." });
+
+        var college = await _context.Colleges.FindAsync(id);
+
+        if (college == null)
+            return NotFound("College not found.");
+
+        return Ok(college);
     }
 
     [HttpPost]

@@ -1,4 +1,5 @@
 ﻿using GradutionProject.Abstractions;
+using GradutionProject.Data;
 using GradutionProject.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -6,114 +7,149 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-
-[Route("api/[controller]")]
-[ApiController]
-public class LoginController(UserService _userService, IConfiguration _configuration) : ControllerBase
+namespace GradutionProject.Api.Controllers
 {
-    [HttpPost]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class LoginController : ControllerBase
     {
-        var email = request.Email.ToLower();
-        var result = email.Contains("admin")
-            ? await AdminLoginAsync(request.Email, request.Password)
-            : email.Contains("prof")
-                ? await ProfLoginAsync(request.Email, request.Password)
-                : await StudentLoginAsync(request.Email, request.Password);
+        private readonly UserService _userService;
+        private readonly ApplicationDbContext _db;
+        private readonly IConfiguration _configuration;
 
-        return result.ToActionResult();
-    }
-
-    public Task<Result<object>> AdminLoginAsync(string email, string password) =>
-        AdminLogin(email, password, "Admin");
-
-    public Task<Result<object>> ProfLoginAsync(string email, string password) =>
-        PerformLogin(email, password, "Professor");
-
-    public Task<Result<object>> StudentLoginAsync(string email, string password) =>
-        PerformLogin(email, password, "User");
-
-    private async Task<Result<object>> PerformLogin(string email, string password, string role)
-    {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-            return Result.Failure<object>(new Error("Email and password are required"));
-
-        var student = await _userService.LoginAsync(email, password);
-        if (student == null)
-            return Result.Failure<object>(new Error("Invalid email or password"));
-
-        var token = CreateToken(student, role);
-        return Result.Success<object>(new
+        public LoginController(UserService userService, IConfiguration configuration,ApplicationDbContext applicationDbContext)
         {
-            Message = "Login successful",
-            UserId = student.Id,
-            Token = token,
-            Role = role
-        });
-    }
-    private async Task<Result<object>> AdminLogin(string email, string password, string role)
-    {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-            return Result.Failure<object>(new Error("Email and password are required"));
+            _userService = userService;
+            _configuration = configuration;
+            _db = applicationDbContext;
+        }
 
-        var student = await _userService.LoginAdminAsync(email, password);
-        if (student == null)
-            return Result.Failure<object>(new Error("Invalid email or password"));
-
-        var token = CreateTokenAdmin(student, role);
-        return Result.Success<object>(new
+        [HttpPost]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            Message = "Login successful",
-            UserId = student.Id,
-            Token = token,
-            Role = role
-        });
-    }
-    private string CreateToken(Student user, string role)
-    {
-        var claims = new List<Claim>
+            if (!ModelState.IsValid)
+                return BadRequest(new { Error = "Invalid request" });
+
+            var email = request.Email.ToLowerInvariant();
+
+            Result<object> loginResult;
+
+            if (email.Contains("admin"))
+                loginResult = await HandleAdminLoginAsync(email, request.Password);
+            else if (email.Contains("prof"))
+                loginResult = await HandleLoginAsync(email, request.Password, "Professor");
+            else
+                loginResult = await HandleLoginAsync(email, request.Password, "User");
+
+            return loginResult.ToActionResult();
+        }
+
+        #region Login Handlers
+
+        private async Task<Result<object>> HandleLoginAsync(string email, string password, string role)
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.MobilePhone, user.PhoneNumber ?? string.Empty),
-            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Role, role)
-        };
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                return Result.Failure<object>(new Error("Email and password are required"));
 
-        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-        var token = new JwtSecurityToken(claims: claims, expires: DateTime.Now.AddDays(2), signingCredentials: creds);
+            var user = await _userService.LoginAsync(email, password);
+            if (user == null)
+                return Result.Failure<object>(new Error("Invalid email or password"));
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-    private string CreateTokenAdmin(Admin user, string role)
-    {
-        var claims = new List<Claim>
+            var token = GenerateJwtToken(
+                userId: user.Id.ToString(),
+                email: user.Email,
+                phone: user.PhoneNumber,
+                role: role,
+                collegeId: user.CollegeId
+            );
+
+            return Result.Success<object>(new
+            {
+                Message = "Login successful",
+                UserId = user.Id,
+                Role = role,
+                Token = token
+            });
+        }
+
+        private async Task<Result<object>> HandleAdminLoginAsync(string email, string password)
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.MobilePhone, user.Phone ?? string.Empty),
-            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Role, role)
-        };
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                return Result.Failure<object>(new Error("Email and password are required"));
 
-        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-        var token = new JwtSecurityToken(claims: claims, expires: DateTime.Now.AddDays(2), signingCredentials: creds);
+            var admin = await _userService.LoginAdminAsync(email, password);
+            if (admin == null)
+                return Result.Failure<object>(new Error("Invalid email or password"));
+            var collegeId =  _db.Colleges.FirstOrDefault(x=> x.AdminId == admin.Id);
+            var token = GenerateJwtToken(
+                userId: admin.Id.ToString(),
+                email: admin.Email,
+                phone: admin.Phone,
+                role: "Admin",
+                collegeId: collegeId?.Id
+            );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+            return Result.Success<object>(new
+            {
+                Message = "Login successful",
+                UserId = admin.Id,
+                Role = "Admin",
+                Token = token
+            });
+        }
+
+        #endregion
+
+        #region JWT Generator
+
+        private string GenerateJwtToken(string userId, string email, string? phone, string role, int? collegeId)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.MobilePhone, phone ?? string.Empty),
+                new Claim(ClaimTypes.Role, role)
+            };
+
+            if (collegeId.HasValue)
+                claims.Add(new Claim("CollegeId", collegeId.Value.ToString()));
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(2),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        #endregion
+
+        #region Models & Helpers
+
+        public class LoginRequest
+        {
+            public required string Email { get; set; }
+            public required string Password { get; set; }
+        }
+
+        #endregion
     }
 
-    public class LoginRequest
+    public static class ResultExtensions
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public static IActionResult ToActionResult(this Result result) =>
+            result.IsSuccess
+                ? new OkResult()
+                : new BadRequestObjectResult(new { Error = result.Error?.ToString() });
+
+        public static IActionResult ToActionResult<T>(this Result<T> result) =>
+            result.IsSuccess
+                ? new OkObjectResult(result.Value)
+                : new BadRequestObjectResult(new { Error = result.Error?.ToString() });
     }
-}
-
-public static class ResultExtensions
-{
-    public static IActionResult ToActionResult(this Result result) =>
-        result.IsSuccess ? new OkResult() : new BadRequestObjectResult(new { Error = (string)result.Error });
-
-    public static IActionResult ToActionResult<T>(this Result<T> result) =>
-        result.IsSuccess ? new OkObjectResult(result.Value) : new BadRequestObjectResult(new { Error = (string)result.Error });
 }
