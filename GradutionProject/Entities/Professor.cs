@@ -1,11 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using GradutionProject.Abstractions;
+using System.ComponentModel.DataAnnotations;
 
 namespace GradutionProject.Entities
 {
-    public class Professor
+    public class Professor : Entity
     {
-        [Key]
-        public int Id { get; set; }
+
         public string Name { get; set; }
         public string Phone { get; set; }
         public string Email { get; set; }

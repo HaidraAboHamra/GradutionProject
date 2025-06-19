@@ -1,12 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using GradutionProject.Abstractions;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GradutionProject.Entities;
 
-public class GradeOfStudent
+public class GradeOfStudent: Entity
 {
-    [Key]
-    public int Id { get; set; }
+
     public decimal DegreeOfStudiom { get; set; } = 0;
     public decimal DegreeOfLabs { get; set; } = 0;
     public int StudentId { get; set; }

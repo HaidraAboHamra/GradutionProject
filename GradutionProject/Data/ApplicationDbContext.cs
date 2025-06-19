@@ -1,11 +1,12 @@
-﻿using GradutionProject.Entities;
+﻿using GradutionProject.Abstractions;
+using GradutionProject.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GradutionProject.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Admin> Admins { get; set; }
         public DbSet<College> Colleges { get; set; }
@@ -15,9 +16,19 @@ namespace GradutionProject.Data
         public DbSet<Lecture> Lectures { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.ConfigureEntity();
             modelBuilder.Entity<Admin>().HasData(
-                new Admin { Id = 1, Name = "Admin", Email = "Admin@Admin.com", Password = "AQAAAAIAAYagAAAAEORnOyHZWpGTFS206rXM8pdrBz/Y6pJVOVO8gnGRg6hlLw0VLtacH0ZIGx5Rk9/a0A==", Phone = "999" }
-                );
+    new Admin
+    {
+        Id = 1,
+        Name = "Admin",
+        Email = "Admin@Admin.com",
+        Password = "AQAAAAIAAYagAAAAEORnOyHZWpGTFS206rXM8pdrBz/Y6pJVOVO8gnGRg6hlLw0VLtacH0ZIGx5Rk9/a0A==",
+        Phone = "999",
+        CreatedDate = new DateTime(2024, 01, 01),
+        LastModifiedDate = new DateTime(2024, 01, 01)
+    }
+);
             base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<College>()
            .HasMany(c => c.Students)
@@ -25,5 +36,24 @@ namespace GradutionProject.Data
            .HasForeignKey(s => s.CollegeId)
            .OnDelete(DeleteBehavior.NoAction);
         }
+        public override int SaveChanges()
+        {
+            var entries = ChangeTracker.Entries<Entity>();
+            foreach (var entry in entries)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Entity.CreatedDate = DateTime.UtcNow;
+                    entry.Entity.LastModifiedDate = DateTime.Now;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.LastModifiedDate = DateTime.Now;
+                }
+            }
+
+            return base.SaveChanges();
+        }
+
     }
 }

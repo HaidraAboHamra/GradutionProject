@@ -1,12 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using GradutionProject.Abstractions;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GradutionProject.Entities
 {
-    public class College
+    public class College : Entity
     {
-        [Key]
-        public int Id { get; set; }
+   
         public string Name { get; set; }
         public string Description { get; set; }
         public int YearOfStudy { get; set; }

@@ -21,17 +21,17 @@ public class StudentController(ApplicationDbContext context, IWebHostEnvironment
 
     // GET: api/student
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StudentDto>>> GetAll()
+    public async Task<ActionResult<List<StudentDto>>> GetAll()
     {
-        var students = await _context.Students.ToListAsync();
+        var students = await _context.Students.Include(s => s.College).ToListAsync();
 
         var result = students.Select(s => new StudentDto
         {
-            Id = s.Id,
+         
             Name = s.Name,
             Email = s.Email,
             Gender = (int?)s.Gender,
-            CollegeId = s.CollegeId,
+            CollegeId = s.College.Name,
             PhoneNumber = s.PhoneNumber,
             Birth = s.Birth,
             CertificateDate = s.CertificateDate,
@@ -49,17 +49,21 @@ public class StudentController(ApplicationDbContext context, IWebHostEnvironment
     [HttpGet("{id}")]
     public async Task<ActionResult<StudentDto>> GetById(int id)
     {
-        var s = await _context.Students.FindAsync(id);
+        var s = await _context.Students
+      .Include(s => s.College)
+      .FirstOrDefaultAsync(s => s.Id == id);
+
+
         if (s == null)
             return NotFound(new { message = "Student not found." });
 
         var result = new StudentDto
         {
-            Id = s.Id,
+            
             Name = s.Name,
             Email = s.Email,
             Gender = (int?)s.Gender,
-            CollegeId = s.CollegeId,
+            CollegeId = s.College.Name,
             PhoneNumber = s.PhoneNumber,
             Birth = s.Birth,
             CertificateDate = s.CertificateDate,
@@ -181,11 +185,11 @@ public class StudentRegisterDto
 }
 public class StudentDto
 {
-    public int Id { get; set; }
+   
     public string? Name { get; set; }
     public string? Email { get; set; }
     public int? Gender { get; set; }
-    public int? CollegeId { get; set; }
+    public string? CollegeId { get; set; }
     public string? PhoneNumber { get; set; }
     public DateTime? Birth { get; set; }
     public DateTime? CertificateDate { get; set; }

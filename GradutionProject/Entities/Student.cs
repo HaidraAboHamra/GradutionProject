@@ -1,12 +1,12 @@
-﻿using GradutionProject.Entities.Enums;
+﻿using GradutionProject.Abstractions;
+using GradutionProject.Entities.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace GradutionProject.Entities
 {
-    public class Student
+    public class Student : Entity
     {
-        [Key]
-        public int Id { get; set; }
+
         public string? Name { get; set; }
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }

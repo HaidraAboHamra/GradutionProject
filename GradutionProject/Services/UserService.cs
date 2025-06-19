@@ -84,7 +84,7 @@ public class UserService
         return result == PasswordVerificationResult.Success ? professor : null;
     }
 
-    public async Task<Result> ChangePasswordAsync(int studentId, string currentPassword, string newPassword)
+    public async Task<Result> ChangePasswordAsync(int studentId/*, string currentPassword*/, string newPassword)
     {
         var student = await _context.Students.FirstOrDefaultAsync(u => u.Id == studentId);
         if (student == null)
@@ -92,11 +92,11 @@ public class UserService
             return Result.Failure(new Error("User not found"));
         }
 
-        var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash, currentPassword);
-        if (passwordVerificationResult != PasswordVerificationResult.Success)
-        {
-            return Result.Failure(new Error("Current password is incorrect"));
-        }
+        //var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash, currentPassword);
+        //if (passwordVerificationResult != PasswordVerificationResult.Success)
+        //{
+        //    return Result.Failure(new Error("Current password is incorrect"));
+        //}
 
         student.PasswordHash = _passwordHasher.HashPassword(student, newPassword);
         _context.Students.Update(student);
