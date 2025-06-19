@@ -1,15 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace GradutionProject.Entities
+namespace GradutionProject.Entities;
+
+public class GradeOfStudent
 {
-    public class GradeOfStudent
-    {
-        [Key]
-        public int Id { get; set; }
-
-        public int StudentId { get; set; }
-        public int CoursesId { get; set; }
-        public Student Student { get; set; }
-        public Cours Cours { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+    public decimal DegreeOfStudiom { get; set; } = 0;
+    public decimal DegreeOfLabs { get; set; } = 0;
+    public int StudentId { get; set; }
+    public int CoursesId { get; set; }
+    [ForeignKey("StudentId")]
+    public Student Student { get; set; }
+    [ForeignKey("CoursesId")]
+    public Cours Cours { get; set; }
 }

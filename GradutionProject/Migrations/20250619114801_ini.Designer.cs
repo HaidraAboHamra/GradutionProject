@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GradutionProject.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250611150718_initialecreate")]
-    partial class initialecreate
+    [Migration("20250619114801_ini")]
+    partial class ini
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -105,11 +105,11 @@ namespace GradutionProject.Migrations
                     b.Property<int?>("CollegeId")
                         .HasColumnType("int");
 
-                    b.Property<int>("DegreeOfLabs")
-                        .HasColumnType("int");
+                    b.Property<decimal>("DegreeOfLabs")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("DegreeOfStudiom")
-                        .HasColumnType("int");
+                    b.Property<decimal>("DegreeOfStudiom")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -122,14 +122,11 @@ namespace GradutionProject.Migrations
                     b.Property<int?>("ProfessorId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProfesssorId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CollegeId");
 
-                    b.HasIndex("ProfesssorId");
+                    b.HasIndex("ProfessorId");
 
                     b.ToTable("Courses");
                 });
@@ -172,7 +169,7 @@ namespace GradutionProject.Migrations
                     b.ToTable("Lectures");
                 });
 
-            modelBuilder.Entity("GradutionProject.Entities.Professsor", b =>
+            modelBuilder.Entity("GradutionProject.Entities.Professor", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -203,7 +200,7 @@ namespace GradutionProject.Migrations
 
                     b.HasIndex("CollegeId");
 
-                    b.ToTable("Professsors");
+                    b.ToTable("Professors");
                 });
 
             modelBuilder.Entity("GradutionProject.Entities.Student", b =>
@@ -275,11 +272,9 @@ namespace GradutionProject.Migrations
                         .WithMany()
                         .HasForeignKey("CollegeId");
 
-                    b.HasOne("GradutionProject.Entities.Professsor", "Professsor")
+                    b.HasOne("GradutionProject.Entities.Professor", "Professsor")
                         .WithMany()
-                        .HasForeignKey("ProfesssorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ProfessorId");
 
                     b.Navigation("College");
 
@@ -292,7 +287,7 @@ namespace GradutionProject.Migrations
                         .WithMany()
                         .HasForeignKey("CollegeId");
 
-                    b.HasOne("GradutionProject.Entities.Professsor", "Professsor")
+                    b.HasOne("GradutionProject.Entities.Professor", "Professsor")
                         .WithMany("Lectures")
                         .HasForeignKey("ProfessorId");
 
@@ -301,7 +296,7 @@ namespace GradutionProject.Migrations
                     b.Navigation("Professsor");
                 });
 
-            modelBuilder.Entity("GradutionProject.Entities.Professsor", b =>
+            modelBuilder.Entity("GradutionProject.Entities.Professor", b =>
                 {
                     b.HasOne("GradutionProject.Entities.College", "College")
                         .WithMany("Professsors")
@@ -332,7 +327,7 @@ namespace GradutionProject.Migrations
                     b.Navigation("Students");
                 });
 
-            modelBuilder.Entity("GradutionProject.Entities.Professsor", b =>
+            modelBuilder.Entity("GradutionProject.Entities.Professor", b =>
                 {
                     b.Navigation("Lectures");
                 });

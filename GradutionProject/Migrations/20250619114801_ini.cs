@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GradutionProject.Migrations
 {
     /// <inheritdoc />
-    public partial class initialecreate : Migration
+    public partial class ini : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -49,7 +49,7 @@ namespace GradutionProject.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Professsors",
+                name: "Professors",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -62,9 +62,9 @@ namespace GradutionProject.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Professsors", x => x.Id);
+                    table.PrimaryKey("PK_Professors", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Professsors_Colleges_CollegeId",
+                        name: "FK_Professors_Colleges_CollegeId",
                         column: x => x.CollegeId,
                         principalTable: "Colleges",
                         principalColumn: "Id");
@@ -108,11 +108,10 @@ namespace GradutionProject.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DegreeOfLabs = table.Column<int>(type: "int", nullable: false),
-                    DegreeOfStudiom = table.Column<int>(type: "int", nullable: false),
+                    DegreeOfLabs = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DegreeOfStudiom = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     CollegeId = table.Column<int>(type: "int", nullable: true),
-                    ProfessorId = table.Column<int>(type: "int", nullable: true),
-                    ProfesssorId = table.Column<int>(type: "int", nullable: false)
+                    ProfessorId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -123,11 +122,10 @@ namespace GradutionProject.Migrations
                         principalTable: "Colleges",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Courses_Professsors_ProfesssorId",
-                        column: x => x.ProfesssorId,
-                        principalTable: "Professsors",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        name: "FK_Courses_Professors_ProfessorId",
+                        column: x => x.ProfessorId,
+                        principalTable: "Professors",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -152,9 +150,9 @@ namespace GradutionProject.Migrations
                         principalTable: "Colleges",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Lectures_Professsors_ProfessorId",
+                        name: "FK_Lectures_Professors_ProfessorId",
                         column: x => x.ProfessorId,
-                        principalTable: "Professsors",
+                        principalTable: "Professors",
                         principalColumn: "Id");
                 });
 
@@ -176,9 +174,9 @@ namespace GradutionProject.Migrations
                 column: "CollegeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Courses_ProfesssorId",
+                name: "IX_Courses_ProfessorId",
                 table: "Courses",
-                column: "ProfesssorId");
+                column: "ProfessorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Lectures_CollegeId",
@@ -191,8 +189,8 @@ namespace GradutionProject.Migrations
                 column: "ProfessorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Professsors_CollegeId",
-                table: "Professsors",
+                name: "IX_Professors_CollegeId",
+                table: "Professors",
                 column: "CollegeId");
 
             migrationBuilder.CreateIndex(
@@ -214,7 +212,7 @@ namespace GradutionProject.Migrations
                 name: "Students");
 
             migrationBuilder.DropTable(
-                name: "Professsors");
+                name: "Professors");
 
             migrationBuilder.DropTable(
                 name: "Colleges");

@@ -9,15 +9,15 @@ namespace GradutionProject.Entities
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public int DegreeOfLabs { get; set; }
-        public int DegreeOfStudiom {  get; set; }
+        public decimal DegreeOfLabs { get; set; }
+        public decimal DegreeOfStudiom {  get; set; }
 
         ///Relations
         public int? CollegeId { get; set; }
         [ForeignKey("CollegeId")]
         public College College { get; set; }
         public int? ProfessorId { get; set; }
-        public Professsor Professsor { get; set; }
+        public Professor Professsor { get; set; }
 
 
     }

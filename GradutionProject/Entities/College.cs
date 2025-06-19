@@ -16,6 +16,6 @@ namespace GradutionProject.Entities
         public int? AdminId { get; set; }
         [ForeignKey("AdminId")]
         public Admin? Admin { get; set; }
-        public List<Professsor> Professsors { get; set; } = new List<Professsor>();
+        public List<Professor> Professsors { get; set; } = new List<Professor>();
     }
 }

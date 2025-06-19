@@ -18,6 +18,6 @@ public class Lecture
     public College College { get; set; }
     public int? ProfessorId { get; set; }
     [ForeignKey("ProfessorId")]
-    public Professsor Professsor { get; set; }
+    public Professor Professsor { get; set; }
 
 }

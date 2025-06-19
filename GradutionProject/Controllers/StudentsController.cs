@@ -21,22 +21,57 @@ public class StudentController(ApplicationDbContext context, IWebHostEnvironment
 
     // GET: api/student
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Student>>> GetAll()
+    public async Task<ActionResult<IEnumerable<StudentDto>>> GetAll()
     {
         var students = await _context.Students.ToListAsync();
-        return Ok(students);
+
+        var result = students.Select(s => new StudentDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Email = s.Email,
+            Gender = (int?)s.Gender,
+            CollegeId = s.CollegeId,
+            PhoneNumber = s.PhoneNumber,
+            Birth = s.Birth,
+            CertificateDate = s.CertificateDate,
+            NationalId = s.NationalId,
+            CertificateImgBase64 = s.CertificateImg != null ? Convert.ToBase64String(s.CertificateImg) : null,
+            PersonalPhotoBase64 = s.PersonalPhoto != null ? Convert.ToBase64String(s.PersonalPhoto) : null,
+            InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
+        });
+
+        return Ok(result);
     }
+
 
     // GET: api/student/{id}
     [HttpGet("{id}")]
-    public async Task<ActionResult<Student>> GetById(int id)
+    public async Task<ActionResult<StudentDto>> GetById(int id)
     {
-        var student = await _context.Students.FindAsync(id);
-        if (student == null)
+        var s = await _context.Students.FindAsync(id);
+        if (s == null)
             return NotFound(new { message = "Student not found." });
 
-        return Ok(student);
+        var result = new StudentDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Email = s.Email,
+            Gender = (int?)s.Gender,
+            CollegeId = s.CollegeId,
+            PhoneNumber = s.PhoneNumber,
+            Birth = s.Birth,
+            CertificateDate = s.CertificateDate,
+            NationalId = s.NationalId,
+            CertificateImgBase64 = s.CertificateImg != null ? Convert.ToBase64String(s.CertificateImg) : null,
+            PersonalPhotoBase64 = s.PersonalPhoto != null ? Convert.ToBase64String(s.PersonalPhoto) : null,
+            InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
+        };
+
+        return Ok(result);
     }
+
 
     // POST: api/student/register
     [HttpPost("register")]
@@ -143,4 +178,21 @@ public class StudentRegisterDto
     public IFormFile? CertificateImg { get; set; }
     public IFormFile? PersonalPhoto { get; set; }
     public IFormFile? Invoice { get; set; }
+}
+public class StudentDto
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    public int? Gender { get; set; }
+    public int? CollegeId { get; set; }
+    public string? PhoneNumber { get; set; }
+    public DateTime? Birth { get; set; }
+    public DateTime? CertificateDate { get; set; }
+    public string? NationalId { get; set; }
+
+    // صور Base64
+    public string? CertificateImgBase64 { get; set; }
+    public string? PersonalPhotoBase64 { get; set; }
+    public string? InvoiceBase64 { get; set; }
 }

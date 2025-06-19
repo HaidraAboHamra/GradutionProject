@@ -2,7 +2,7 @@
 
 namespace GradutionProject.Entities
 {
-    public class Professsor
+    public class Professor
     {
         [Key]
         public int Id { get; set; }

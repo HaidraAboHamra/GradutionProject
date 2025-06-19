@@ -21,17 +21,22 @@ public class LectureController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LectureDto>>> GetLectures()
     {
-        return await _context.Lectures
-            .Select(l => new LectureDto
-            {
-                Id = l.Id,
-                Name = l.Name,
-                Description = l.Description,
-                NumberOfLectures = l.NumberOfLectures,
-                CollegeId = l.CollegeId,
-                ProfessorId = l.ProfessorId
-            }).ToListAsync();
+        var lectures = await _context.Lectures.ToListAsync();
+
+        var result = lectures.Select(l => new LectureDto
+        {
+            Id = l.Id,
+            Name = l.Name,
+            Description = l.Description,
+            NumberOfLectures = l.NumberOfLectures,
+            CollegeId = l.CollegeId,
+            ProfessorId = l.ProfessorId,
+            PdfBase64 = l.Pdf != null ? Convert.ToBase64String(l.Pdf) : null
+        });
+
+        return Ok(result);
     }
+
 
     // GET: api/Lecture/5
     [HttpGet("{id}")]
@@ -42,27 +47,33 @@ public class LectureController : ControllerBase
         if (lecture == null)
             return NotFound();
 
-        return new LectureDto
+        var dto = new LectureDto
         {
             Id = lecture.Id,
             Name = lecture.Name,
             Description = lecture.Description,
             NumberOfLectures = lecture.NumberOfLectures,
             CollegeId = lecture.CollegeId,
-            ProfessorId = lecture.ProfessorId
+            ProfessorId = lecture.ProfessorId,
+            PdfBase64 = lecture.Pdf != null ? Convert.ToBase64String(lecture.Pdf) : null
         };
+
+        return Ok(dto);
     }
+
 
     // POST: api/Lecture
     [HttpPost]
-    public async Task<ActionResult<LectureDto>> CreateLecture([FromBody] CreateLectureDto dto)
+    public async Task<ActionResult<LectureDto>> CreateLecture([FromForm] CreateLectureDto dto)
     {
+        byte[]? pdf = await ConvertToBytes(dto.Pdf);
+
         var lecture = new Lecture
         {
             Name = dto.Name,
             Description = dto.Description,
             NumberOfLectures = dto.NumberOfLectures,
-            Pdf = dto.Pdf,
+            Pdf = pdf,
             CollegeId = dto.CollegeId,
             ProfessorId = dto.ProfessorId
         };
@@ -85,16 +96,17 @@ public class LectureController : ControllerBase
 
     // PUT: api/Lecture/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateLecture(int id, [FromBody] CreateLectureDto dto)
+    public async Task<IActionResult> UpdateLecture(int id, [FromForm] CreateLectureDto dto)
     {
         var lecture = await _context.Lectures.FindAsync(id);
         if (lecture == null)
             return NotFound();
+        byte[]? pdf = await ConvertToBytes(dto.Pdf);
 
         lecture.Name = dto.Name;
         lecture.Description = dto.Description;
         lecture.NumberOfLectures = dto.NumberOfLectures;
-        lecture.Pdf = dto.Pdf;
+        lecture.Pdf = pdf;
         lecture.CollegeId = dto.CollegeId;
         lecture.ProfessorId = dto.ProfessorId;
 
@@ -103,7 +115,14 @@ public class LectureController : ControllerBase
 
         return NoContent();
     }
+    private async Task<byte[]?> ConvertToBytes(IFormFile? file)
+    {
+        if (file == null || file.Length == 0) return null;
 
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+        return ms.ToArray();
+    }
     // DELETE: api/Lecture/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteLecture(int id)
@@ -126,7 +145,11 @@ public class LectureController : ControllerBase
         public int NumberOfLectures { get; set; }
         public int? CollegeId { get; set; }
         public int? ProfessorId { get; set; }
+
+        // PDF كـ Base64
+        public string? PdfBase64 { get; set; }
     }
+
 
     // CreateLectureDto.cs
     public class CreateLectureDto
@@ -135,7 +158,7 @@ public class LectureController : ControllerBase
         public string Name { get; set; }
         public string Description { get; set; }
         public int NumberOfLectures { get; set; }
-        public byte[] Pdf { get; set; }
+        public IFormFile Pdf { get; set; }
         public int? CollegeId { get; set; }
         public int? ProfessorId { get; set; }
     }
