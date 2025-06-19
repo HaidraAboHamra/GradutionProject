@@ -1,11 +1,12 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace GradutionProject.Controllers;
-
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class LectureController : ControllerBase

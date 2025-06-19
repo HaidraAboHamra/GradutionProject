@@ -14,6 +14,8 @@ public class UserService
     private readonly ApplicationDbContext _context;
     private readonly PasswordHasher<Student> _passwordHasher;
     private readonly PasswordHasher<Admin> _passwordHasherAdmin;
+    private readonly PasswordHasher<Professor> _passwordHasherProfessor;
+
 
 
     public UserService(ApplicationDbContext context)
@@ -67,6 +69,19 @@ public class UserService
         var result = _passwordHasherAdmin.VerifyHashedPassword(admin, admin.Password, password);
 
         return result == PasswordVerificationResult.Success ? admin : null;
+    }
+    public async Task<Professor?> LoginProfessorAsync(string email, string password)
+    {
+        var professor = await _context.Professors.FirstOrDefaultAsync(u => u.Email == email);
+
+        if (professor == null)
+        {
+            return null;
+        }
+
+        var result = _passwordHasherProfessor.VerifyHashedPassword(professor, professor.Password, password);
+
+        return result == PasswordVerificationResult.Success ? professor : null;
     }
 
     public async Task<Result> ChangePasswordAsync(int studentId, string currentPassword, string newPassword)
