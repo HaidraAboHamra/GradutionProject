@@ -21,26 +21,28 @@ namespace GradutionProject.Controllers
 
         // GET: api/Professors
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProfessorDto>>> GetAll()
+        public async Task<ActionResult> GetAll()
         {
             var professors = await _context.Professors
                 .Include(p => p.College)
-                .Select(p => new ProfessorDto
+                .Select(p => new
                 {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Phone = p.Phone,
-                    Email = p.Email,
-                    CollegeId = p.CollegeId
+                    p.Id,
+                    p.Name,
+                    p.Phone,
+                    p.Email,
+                    p.CollegeId,
+                    CollegeName = p.College != null ? p.College.Name : null
                 })
                 .ToListAsync();
 
             return Ok(professors);
         }
 
+
         // GET: api/Professors/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProfessorDto>> Get(int id)
+        public async Task<ActionResult> Get(int id)
         {
             var professor = await _context.Professors
                 .Include(p => p.College)
@@ -49,17 +51,19 @@ namespace GradutionProject.Controllers
             if (professor == null)
                 return NotFound(new { message = $"Professor with ID {id} not found." });
 
-            var dto = new ProfessorDto
+            var result = new
             {
-                Id = professor.Id,
-                Name = professor.Name,
-                Phone = professor.Phone,
-                Email = professor.Email,
-                CollegeId = professor.CollegeId
+                professor.Id,
+                professor.Name,
+                professor.Phone,
+                professor.Email,
+                professor.CollegeId,
+                CollegeName = professor.College != null ? professor.College.Name : null
             };
 
-            return Ok(dto);
+            return Ok(result);
         }
+
 
         // POST: api/Professors
         [HttpPost]

@@ -105,6 +105,34 @@ namespace GradutionProject.Migrations
                     b.ToTable("Colleges");
                 });
 
+            modelBuilder.Entity("GradutionProject.Entities.Complaint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("Complaints");
+                });
+
             modelBuilder.Entity("GradutionProject.Entities.Cours", b =>
                 {
                     b.Property<int>("Id")
@@ -190,6 +218,34 @@ namespace GradutionProject.Migrations
                     b.HasIndex("ProfessorId");
 
                     b.ToTable("Lectures");
+                });
+
+            modelBuilder.Entity("GradutionProject.Entities.News", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AdminId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminId");
+
+                    b.ToTable("News");
                 });
 
             modelBuilder.Entity("GradutionProject.Entities.Professor", b =>
@@ -301,6 +357,17 @@ namespace GradutionProject.Migrations
                     b.Navigation("Admin");
                 });
 
+            modelBuilder.Entity("GradutionProject.Entities.Complaint", b =>
+                {
+                    b.HasOne("GradutionProject.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("GradutionProject.Entities.Cours", b =>
                 {
                     b.HasOne("GradutionProject.Entities.College", "College")
@@ -329,6 +396,17 @@ namespace GradutionProject.Migrations
                     b.Navigation("College");
 
                     b.Navigation("Professsor");
+                });
+
+            modelBuilder.Entity("GradutionProject.Entities.News", b =>
+                {
+                    b.HasOne("GradutionProject.Entities.Admin", "Admin")
+                        .WithMany()
+                        .HasForeignKey("AdminId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Admin");
                 });
 
             modelBuilder.Entity("GradutionProject.Entities.Professor", b =>

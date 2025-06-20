@@ -22,24 +22,50 @@ public class AdminsController : ControllerBase
 
     // GET: api/Admins
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Admin>>> GetAdmins()
+    public async Task<ActionResult<IEnumerable<object>>> GetAdmins()
     {
-        return await _context.Admins.ToListAsync();
+        var admins = await _context.Admins
+            .Include(a => a.College)
+            .ToListAsync();
+
+        var result = admins.Select(a => new
+        {
+            a.Id,
+            a.Name,
+            a.Phone,
+            a.Email,
+            CollegeName = a.College != null ? a.College.Name : null
+        });
+
+        return Ok(result);
     }
+
 
     // GET: api/Admins/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<Admin>> GetAdmin(int id)
+    public async Task<ActionResult> GetAdmin(int id)
     {
-        var admin = await _context.Admins.FindAsync(id);
+        var admin = await _context.Admins
+            .Include(a => a.College)
+            .FirstOrDefaultAsync(a => a.Id == id);
 
         if (admin == null)
         {
-            return NotFound();
+            return NotFound(new { message = $"Admin with ID {id} not found." });
         }
 
-        return Ok(admin);
+        var result = new
+        {
+            admin.Id,
+            admin.Name,
+            admin.Phone,
+            admin.Email,
+            CollegeName = admin.College != null ? admin.College.Name : null
+        };
+
+        return Ok(result);
     }
+
 
     // POST: api/Admins
     [HttpPost]

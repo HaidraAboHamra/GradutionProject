@@ -159,11 +159,4 @@ public class LoginRequest
         public string Password { get; set; }
     }
 
-public static class ResultExtensions
-{
-    public static IActionResult ToActionResult(this Result result) =>
-        result.IsSuccess ? new OkResult() : new BadRequestObjectResult(new { Error = (string)result.Error });
 
-    public static IActionResult ToActionResult<T>(this Result<T> result) =>
-        result.IsSuccess ? new OkObjectResult(result.Value) : new BadRequestObjectResult(new { Error = (string)result.Error });
-}

@@ -14,6 +14,8 @@ namespace GradutionProject.Data
         public DbSet<Professor> Professors { get; set; }
         public DbSet<Cours> Courses { get; set; }
         public DbSet<Lecture> Lectures { get; set; }
+        public DbSet<Complaint> Complaints { get; set; }
+        public DbSet<News> News { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ConfigureEntity();

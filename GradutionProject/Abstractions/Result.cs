@@ -1,4 +1,6 @@
-﻿namespace GradutionProject.Abstractions;
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace GradutionProject.Abstractions;
 
 /// <summary>
 /// Represents the result of an operation, which can be either successful or failed.
@@ -120,4 +122,12 @@ public readonly struct Result<T>
 
         return Result.Failure(result.Error);
     }
+}
+public static class ResultExtensions
+{
+    public static IActionResult ToActionResult(this Result result) =>
+        result.IsSuccess ? new OkResult() : new BadRequestObjectResult(new { Error = (string)result.Error });
+
+    public static IActionResult ToActionResult<T>(this Result<T> result) =>
+        result.IsSuccess ? new OkObjectResult(result.Value) : new BadRequestObjectResult(new { Error = (string)result.Error });
 }
