@@ -11,6 +11,7 @@ namespace GradutionProject.Data
         public DbSet<Admin> Admins { get; set; }
         public DbSet<College> Colleges { get; set; }
         public DbSet<Student> Students { get; set; }
+        public DbSet<NewStudent> NewStudents { get; set; }
         public DbSet<Professor> Professors { get; set; }
         public DbSet<Cours> Courses { get; set; }
         public DbSet<Lecture> Lectures { get; set; }

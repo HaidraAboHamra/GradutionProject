@@ -11,6 +11,7 @@ namespace GradutionProject.Entities
         public string Description { get; set; }
         public decimal DegreeOfLabs { get; set; }
         public decimal DegreeOfStudiom {  get; set; }
+        public int Year { get; set; }
 
         ///Relations
         public int? CollegeId { get; set; }
