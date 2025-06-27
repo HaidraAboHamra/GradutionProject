@@ -64,9 +64,16 @@ public class LectureController : ControllerBase
 
 
     // POST: api/Lecture
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<LectureDto>> CreateLecture([FromForm] CreateLectureDto dto)
     {
+        var professorId = GetClaimValue("UserId");
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (professorId == null || collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
         byte[]? pdf = await ConvertToBytes(dto.Pdf);
 
         var lecture = new Lecture
@@ -75,8 +82,8 @@ public class LectureController : ControllerBase
             Description = dto.Description,
             NumberOfLectures = dto.NumberOfLectures,
             Pdf = pdf,
-            CollegeId = dto.CollegeId,
-            ProfessorId = dto.ProfessorId
+            CollegeId = collegeId,
+            ProfessorId = professorId
         };
 
         _context.Lectures.Add(lecture);
@@ -89,33 +96,44 @@ public class LectureController : ControllerBase
             Description = lecture.Description,
             NumberOfLectures = lecture.NumberOfLectures,
             CollegeId = lecture.CollegeId,
-            ProfessorId = lecture.ProfessorId
+            ProfessorId = lecture.ProfessorId,
+            PdfBase64 = lecture.Pdf != null ? Convert.ToBase64String(lecture.Pdf) : null
         };
 
         return CreatedAtAction(nameof(GetLecture), new { id = lecture.Id }, result);
     }
 
+
     // PUT: api/Lecture/5
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateLecture(int id, [FromForm] CreateLectureDto dto)
     {
         var lecture = await _context.Lectures.FindAsync(id);
         if (lecture == null)
             return NotFound();
+
+        var professorId = GetClaimValue("UserId");
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (professorId == null || collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
         byte[]? pdf = await ConvertToBytes(dto.Pdf);
 
         lecture.Name = dto.Name;
         lecture.Description = dto.Description;
         lecture.NumberOfLectures = dto.NumberOfLectures;
         lecture.Pdf = pdf;
-        lecture.CollegeId = dto.CollegeId;
-        lecture.ProfessorId = dto.ProfessorId;
+        lecture.CollegeId = collegeId;
+        lecture.ProfessorId = professorId;
 
         _context.Entry(lecture).State = EntityState.Modified;
         await _context.SaveChangesAsync();
 
         return NoContent();
     }
+
     private async Task<byte[]?> ConvertToBytes(IFormFile? file)
     {
         if (file == null || file.Length == 0) return null;
@@ -137,6 +155,14 @@ public class LectureController : ControllerBase
 
         return NoContent();
     }
+    private int? GetClaimValue(string claimType)
+    {
+        var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+        if (claim != null && int.TryParse(claim.Value, out int value))
+            return value;
+        return null;
+    }
+
     // LectureDto.cs
     public class LectureDto
     {
@@ -160,8 +186,6 @@ public class LectureController : ControllerBase
         public string Description { get; set; }
         public int NumberOfLectures { get; set; }
         public IFormFile Pdf { get; set; }
-        public int? CollegeId { get; set; }
-        public int? ProfessorId { get; set; }
     }
 
 }

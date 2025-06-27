@@ -90,7 +90,6 @@ public class LoginController : ControllerBase
             UserId = professor.Id,
             Role = "Professor",
             CollegeId = collegeId,
-            CourseId = courseId,
             Token = token
         });
     }
@@ -119,7 +118,7 @@ public class LoginController : ControllerBase
         });
     }
 
-    private string GenerateJwtToken(string userId, string email, string phone, string role, int? collegeId, int? courseId = null)
+    private string GenerateJwtToken(string userId, string email, string phone, string role, int? collegeId)
     {
         var claims = new List<Claim>
     {
@@ -132,8 +131,7 @@ public class LoginController : ControllerBase
         if (collegeId.HasValue)
             claims.Add(new Claim("CollegeId", collegeId.Value.ToString()));
 
-        if (courseId.HasValue)
-            claims.Add(new Claim("CourseId", courseId.Value.ToString()));
+       
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);

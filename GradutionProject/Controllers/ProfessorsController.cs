@@ -61,6 +61,7 @@ namespace GradutionProject.Controllers
                 return NotFound(new { message = $"Professor with ID {id} not found." });
             return NoContent();
         }
+
     }
     public class ProfessorDto
     {
