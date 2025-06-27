@@ -1,6 +1,7 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
 using GradutionProject.Entities.Enums;
+using GradutionProject.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,220 +15,63 @@ namespace GradutionProject.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class StudentController(ApplicationDbContext context, IWebHostEnvironment environment) : ControllerBase
+public class StudentController : ControllerBase
 {
-    private readonly ApplicationDbContext _context = context;
-    private readonly IWebHostEnvironment _environment = environment;
+    private readonly IStudentService _studentService;
+    public StudentController(IStudentService studentService)
+    {
+        _studentService = studentService;
+    }
 
-    // GET: api/student
     [HttpGet]
-    public async Task<ActionResult<object>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        if (page <= 0) page = 1;
-        if (pageSize <= 0 || pageSize > 100) pageSize = 10;
-
-        var totalCount = await _context.Students.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-        var students = await _context.NewStudents
-            .Include(s => s.College)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        var result = students.Select(s => new StudentDto
-        {
-            Name = s.Name,
-            Email = s.Email,
-            Gender = (int?)s.Gender,
-            CollegeId = s.College?.Name,
-            PhoneNumber = s.PhoneNumber,
-            Birth = s.Birth,
-            CertificateDate = s.CertificateDate,
-            NationalId = s.NationalId,
-            CertificateImgBase64 = s.CertificateImg != null ? Convert.ToBase64String(s.CertificateImg) : null,
-            PersonalPhotoBase64 = s.PersonalPhoto != null ? Convert.ToBase64String(s.PersonalPhoto) : null,
-            InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
-        });
-
-        return Ok(new
-        {
-            currentPage = page,
-            pageSize = pageSize,
-            totalPages = totalPages,
-            totalCount = totalCount,
-            data = result
-        });
-    }
-    [HttpGet("students")]
-    public async Task<ActionResult<object>> GetAllStudent([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-    {
-        if (page <= 0) page = 1;
-        if (pageSize <= 0 || pageSize > 100) pageSize = 10;
-
-        var totalCount = await _context.Students.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-        var students = await _context.Students
-            .Include(s => s.College)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        var result = students.Select(s => new StudentDto
-        {
-            Name = s.Name,
-            Email = s.Email,
-            Gender = (int?)s.Gender,
-            CollegeId = s.College?.Name,
-            PhoneNumber = s.PhoneNumber,
-            Birth = s.Birth,
-            CertificateDate = s.CertificateDate,
-            NationalId = s.NationalId,
-            CertificateImgBase64 = s.CertificateImg != null ? Convert.ToBase64String(s.CertificateImg) : null,
-            PersonalPhotoBase64 = s.PersonalPhoto != null ? Convert.ToBase64String(s.PersonalPhoto) : null,
-            InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
-        });
-
-        return Ok(new
-        {
-            currentPage = page,
-            pageSize = pageSize,
-            totalPages = totalPages,
-            totalCount = totalCount,
-            data = result
-        });
-    }
-
-    // GET: api/student/{id}
-    [HttpGet("{id}")]
-    public async Task<ActionResult<StudentDto>> GetById(int id)
-    {
-        var s = await _context.Students
-      .Include(s => s.College)
-      .FirstOrDefaultAsync(s => s.Id == id);
-
-
-        if (s == null)
-            return NotFound(new { message = "Student not found." });
-
-        var result = new StudentDto
-        {
-
-            Name = s.Name,
-            Email = s.Email,
-            Gender = (int?)s.Gender,
-            CollegeId = s.College.Name,
-            PhoneNumber = s.PhoneNumber,
-            Birth = s.Birth,
-            CertificateDate = s.CertificateDate,
-            NationalId = s.NationalId,
-            CertificateImgBase64 = s.CertificateImg != null ? Convert.ToBase64String(s.CertificateImg) : null,
-            PersonalPhotoBase64 = s.PersonalPhoto != null ? Convert.ToBase64String(s.PersonalPhoto) : null,
-            InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
-        };
-
+        var result = await _studentService.GetAllAsync(page, pageSize);
         return Ok(result);
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var result = await _studentService.GetByIdAsync(id);
+        return result is null ? NotFound(new { message = "Student not found." }) : Ok(result);
+    }
 
-    // POST: api/student/register
     [HttpPost("register")]
-    public async Task<ActionResult> Register([FromForm] StudentRegisterDto dto)
+    public async Task<IActionResult> Register([FromForm] StudentRegisterDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var id = await _studentService.RegisterAsync(dto);
+        return Ok(new { message = "Student registered", id });
+    }
 
-        byte[]? certificateBytes = await ConvertToBytes(dto.CertificateImg);
-        byte[]? personalBytes = await ConvertToBytes(dto.PersonalPhoto);
-        byte[]? invoiceBytes = await ConvertToBytes(dto.Invoice);
-
-        var student = new NewStudent
+    [HttpPost("promote/{id}")]
+    public async Task<IActionResult> Promote(int id)
+    {
+        try
         {
-            Name = dto.Name,
-            Email = dto.Email,
-            PasswordHash = dto.PasswordHash,
-            Gender = dto.Gender.HasValue ? (Gender?)dto.Gender : null,
-            CollegeId = dto.College,
-            PhoneNumber = dto.PhoneNumber,
-            Birth = dto.Birth,
-            CertificateDate = dto.CertificateDate,
-            NationalId = dto.NationalId,
-            CertificateImg = certificateBytes,
-            PersonalPhoto = personalBytes,
-            Invoice = invoiceBytes
-        };
-
-        _context.NewStudents.Add(student);
-        await _context.SaveChangesAsync();
-        return Ok(new { message = "Student registered successfully", student.Id });
-    }
-    [HttpPost("{id}")]
-    public async Task<ActionResult> RegisterStudent(int id)
-    {
-        var student = await _context.Students.FindAsync(id);
-        if (student == null)
+            var newId = await _studentService.PromoteAsync(id);
+            return Ok(new { message = "Promoted", id = newId });
+        }
+        catch
+        {
             return NotFound(new { message = "Student not found." });
-
-        await _context.Students.AddAsync(student);
-        await _context.SaveChangesAsync();
-        return Ok(new { message = "Student Add successfully", student });
+        }
     }
 
-    // PUT: api/student/{id}
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] StudentRegisterDto dto)
     {
-        var student = await _context.Students.FindAsync(id);
-        if (student == null)
-            return NotFound(new { message = "Student not found." });
-
-        student.Name = dto.Name;
-        student.Email = dto.Email;
-        student.PasswordHash = dto.PasswordHash;
-        student.Gender = dto.Gender.HasValue ? (Gender?)dto.Gender : null;
-        student.CollegeId = dto.College;
-        student.PhoneNumber = dto.PhoneNumber;
-        student.Birth = dto.Birth;
-        student.CertificateDate = dto.CertificateDate;
-        student.NationalId = dto.NationalId;
-
-        if (dto.CertificateImg != null)
-            student.CertificateImg = await ConvertToBytes(dto.CertificateImg);
-
-        if (dto.PersonalPhoto != null)
-            student.PersonalPhoto = await ConvertToBytes(dto.PersonalPhoto);
-
-        if (dto.Invoice != null)
-            student.Invoice = await ConvertToBytes(dto.Invoice);
-
-        _context.Students.Update(student);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Student updated successfully", student });
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var success = await _studentService.UpdateAsync(id, dto);
+        return success ? Ok(new { message = "Updated" }) : NotFound(new { message = "Student not found." });
     }
 
-    // DELETE: api/student/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var student = await _context.Students.FindAsync(id);
-        if (student == null)
-            return NotFound(new { message = "Student not found." });
-
-        _context.Students.Remove(student);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Student deleted successfully" });
-    }
-
-    private async Task<byte[]?> ConvertToBytes(IFormFile? file)
-    {
-        if (file == null || file.Length == 0) return null;
-
-        using var ms = new MemoryStream();
-        await file.CopyToAsync(ms);
-        return ms.ToArray();
+        var success = await _studentService.DeleteAsync(id);
+        return success ? Ok(new { message = "Deleted" }) : NotFound(new { message = "Student not found." });
     }
 }
 
@@ -250,7 +94,7 @@ public class StudentRegisterDto
 }
 public class StudentDto
 {
-   
+
     public string? Name { get; set; }
     public string? Email { get; set; }
     public int? Gender { get; set; }

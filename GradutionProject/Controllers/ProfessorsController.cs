@@ -1,5 +1,7 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
+using GradutionProject.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -10,125 +12,53 @@ namespace GradutionProject.Controllers
     [Route("api/[controller]")]
     public class ProfessorsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IProfessorService _professorService;
         private readonly ILogger<ProfessorsController> _logger;
 
-        public ProfessorsController(ApplicationDbContext context, ILogger<ProfessorsController> logger)
+        public ProfessorsController(IProfessorService professorService, ILogger<ProfessorsController> logger)
         {
-            _context = context;
+            _professorService = professorService;
             _logger = logger;
         }
 
-        // GET: api/Professors
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {
-            var professors = await _context.Professors
-                .Include(p => p.College)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Name,
-                    p.Phone,
-                    p.Email,
-                    p.CollegeId,
-                    CollegeName = p.College != null ? p.College.Name : null
-                })
-                .ToListAsync();
-
-            return Ok(professors);
-        }
-
-
-        // GET: api/Professors/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult> Get(int id)
-        {
-            var professor = await _context.Professors
-                .Include(p => p.College)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (professor == null)
-                return NotFound(new { message = $"Professor with ID {id} not found." });
-
-            var result = new
-            {
-                professor.Id,
-                professor.Name,
-                professor.Phone,
-                professor.Email,
-                professor.CollegeId,
-                CollegeName = professor.College != null ? professor.College.Name : null
-            };
-
+            var result = await _professorService.GetAllAsync();
             return Ok(result);
         }
 
-
-        // POST: api/Professors
-        [HttpPost]
-        public async Task<ActionResult<ProfessorDto>> Create(CreateProfessorDto input)
+        [HttpGet("{id}")]
+        public async Task<ActionResult> Get(int id)
         {
-            if (await _context.Professors.AnyAsync(p => p.Email == input.Email))
-                return Conflict(new { message = "Email already exists." });
-
-            var professor = new Professor
-            {
-                Name = input.Name,
-                Phone = input.Phone,
-                Email = input.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(input.Password),
-                CollegeId = input.CollegeId
-            };
-
-            _context.Professors.Add(professor);
-            await _context.SaveChangesAsync();
-
-            var dto = new ProfessorDto
-            {
-                Id = professor.Id,
-                Name = professor.Name,
-                Phone = professor.Phone,
-                Email = professor.Email,
-                CollegeId = professor.CollegeId
-            };
-
-            return CreatedAtAction(nameof(Get), new { id = professor.Id }, dto);
+            var result = await _professorService.GetByIdAsync(id);
+            if (result == null)
+                return NotFound(new { message = $"Professor with ID {id} not found." });
+            return Ok(result);
         }
 
-        // PUT: api/Professors/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, UpdateProfessorDto input)
+        [HttpPost]
+        public async Task<ActionResult> Create(CreateProfessorDto dto)
         {
-            var professor = await _context.Professors.FindAsync(id);
-            if (professor == null)
+            var id = await _professorService.CreateAsync(dto);
+            return CreatedAtAction(nameof(Get), new { id }, dto);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Update(int id, UpdateProfessorDto dto)
+        {
+            var updated = await _professorService.UpdateAsync(id, dto);
+            if (!updated)
                 return NotFound(new { message = $"Professor with ID {id} not found." });
-
-            professor.Name = input.Name;
-            professor.Phone = input.Phone;
-            professor.Email = input.Email;
-
-            if (!string.IsNullOrWhiteSpace(input.Password))
-                professor.Password = BCrypt.Net.BCrypt.HashPassword(input.Password);
-
-            professor.CollegeId = input.CollegeId;
-
-            await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
-        // DELETE: api/Professors/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            var professor = await _context.Professors.FindAsync(id);
-            if (professor == null)
+            var deleted = await _professorService.DeleteAsync(id);
+            if (!deleted)
                 return NotFound(new { message = $"Professor with ID {id} not found." });
-
-            _context.Professors.Remove(professor);
-            await _context.SaveChangesAsync();
-
             return NoContent();
         }
     }
@@ -139,6 +69,7 @@ namespace GradutionProject.Controllers
         public string Phone { get; set; }
         public string Email { get; set; }
         public int? CollegeId { get; set; }
+        public string? CollegeName { get; internal set; }
     }
 
     public class CreateProfessorDto

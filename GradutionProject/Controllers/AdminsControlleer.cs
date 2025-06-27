@@ -8,139 +8,105 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GradutionProject.Controllers;
 
-[Route("api/[controller]")]
+using GradutionProject.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
+
 [ApiController]
+[Route("api/[controller]")]
 public class AdminsController : ControllerBase
 {
+    private readonly IAdminService _adminService;
     private readonly ApplicationDbContext _context;
-    private readonly IPasswordHasher<Admin> _passwordHasher;
-    public AdminsController(ApplicationDbContext context,IPasswordHasher<Admin> passwordHasher)
+
+    public AdminsController(IAdminService adminService,ApplicationDbContext context)
     {
+        _adminService = adminService;
         _context = context;
-        _passwordHasher = passwordHasher;
     }
 
-    // GET: api/Admins
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<object>>> GetAdmins()
+    public async Task<ActionResult> GetAll()
     {
-        var admins = await _context.Admins
-            .Include(a => a.College)
-            .ToListAsync();
-
-        var result = admins.Select(a => new
-        {
-            a.Id,
-            a.Name,
-            a.Phone,
-            a.Email,
-            CollegeName = a.College != null ? a.College.Name : null
-        });
-
+        var result = await _adminService.GetAllAsync();
         return Ok(result);
     }
 
-
-    // GET: api/Admins/5
     [HttpGet("{id}")]
-    public async Task<ActionResult> GetAdmin(int id)
+    public async Task<ActionResult<object>> Get(int id)
     {
-        var admin = await _context.Admins
-            .Include(a => a.College)
-            .FirstOrDefaultAsync(a => a.Id == id);
-
-        if (admin == null)
-        {
+        var result = await _adminService.GetByIdAsync(id);
+        if (result is null)
             return NotFound(new { message = $"Admin with ID {id} not found." });
-        }
-
-        var result = new
-        {
-            admin.Id,
-            admin.Name,
-            admin.Phone,
-            admin.Email,
-            CollegeName = admin.College != null ? admin.College.Name : null
-        };
-
         return Ok(result);
     }
 
-
-    // POST: api/Admins
     [HttpPost]
-    public async Task<ActionResult> PostAdmin(AdminDto dto)
+    public async Task<ActionResult> Create(CreateAdminDto dto)
     {
-        var admin = new Admin
-        {
-            Name = dto.Name,
-            Email = dto.Email,
-            Password = dto.Password,
-            Phone = dto.Phone,
-        };
-        admin.Password = _passwordHasher.HashPassword(admin, admin.Password);
-        _context.Admins.Add(admin);
-        await _context.SaveChangesAsync();
-
-        return Ok(dto);
+        var id = await _adminService.CreateAsync(dto);
+        return CreatedAtAction(nameof(Get), new { id }, dto);
     }
 
-    // PUT: api/Admins/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutAdmin(int id, Admin admin)
+    public async Task<ActionResult> Update(int id, UpdateAdminDto dto)
     {
-        if (id != admin.Id)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(admin).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!AdminExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
+        var updated = await _adminService.UpdateAsync(id, dto);
+        if (!updated)
+            return NotFound(new { message = $"Admin with ID {id} not found." });
         return NoContent();
     }
 
-    // DELETE: api/Admins/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteAdmin(int id)
+    public async Task<ActionResult> Delete(int id)
     {
-        var admin = await _context.Admins.FindAsync(id);
-        if (admin == null)
-        {
-            return NotFound();
-        }
-
-        _context.Admins.Remove(admin);
-        await _context.SaveChangesAsync();
-
+        var deleted = await _adminService.DeleteAsync(id);
+        if (!deleted)
+            return NotFound(new { message = $"Admin with ID {id} not found." });
         return NoContent();
     }
-
     private bool AdminExists(int id)
     {
         return _context.Admins.Any(e => e.Id == id);
     }
+}
+
+
     public class AdminDto
     {
         public string Name { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
         public string Phone { get; set; }
-
+        public int Id { get; internal set; }
+        public string? CollegeName { get; internal set; }
     }
+public class UpdateAdminDto
+{
+    [Required]
+    public string Name { get; set; }
+
+    [Required, EmailAddress]
+    public string Email { get; set; }
+
+    public string? Password { get; set; }
+
+    [Phone]
+    public string Phone { get; set; }
+}
+
+
+public class CreateAdminDto
+{
+    [Required]
+    public string Name { get; set; }
+
+    [Required, EmailAddress]
+    public string Email { get; set; }
+
+    [Required]
+    public string Password { get; set; }
+
+    [Phone]
+    public string Phone { get; set; }
 }

@@ -1,5 +1,9 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
+using GradutionProject.Interfaces;
+using GradutionProject.Services;
+using GradutionProject.Services.AdminService;
+using GradutionProject.Services.ProfessorService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -40,14 +44,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-string connectionString = $"Data Source={Environment.MachineName}\\MSSQLSQLSERVERTP;User Id = sa; Password=sas; Database=GradutionProject;  Trusted_Connection=false;MultipleActiveResultSets=true;Encrypt=no";
-//string connectionString = $"Data Source={Environment.MachineName}; Database=GradutionProject;  Trusted_Connection=true;MultipleActiveResultSets=true;Encrypt=no";
+//string connectionString = $"Data Source={Environment.MachineName}\\MSSQLSQLSERVERTP;User Id = sa; Password=sas; Database=GradutionProject;  Trusted_Connection=false;MultipleActiveResultSets=true;Encrypt=no";
+string connectionString = $"Data Source={Environment.MachineName}; Database=GradutionProject;  Trusted_Connection=true;MultipleActiveResultSets=true;Encrypt=no";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
 builder.Services.AddControllers();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<IProfessorService, ProfessorService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IPasswordHasher<Admin>, PasswordHasher<Admin>>();
 builder.Services.AddSwaggerGen(c =>

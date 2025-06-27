@@ -9,6 +9,7 @@ using GradutionProject.Entities;
 using GradutionProject.Abstractions;
 using Error = GradutionProject.Abstractions.Error;
 
+namespace GradutionProject.Services;
 public class UserService
 {
     private readonly ApplicationDbContext _context;
@@ -92,7 +93,7 @@ public class UserService
             return Result.Failure(new Error("User not found"));
         }
 
-        //var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash, currentPassword);
+        //var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash);
         //if (passwordVerificationResult != PasswordVerificationResult.Success)
         //{
         //    return Result.Failure(new Error("Current password is incorrect"));
