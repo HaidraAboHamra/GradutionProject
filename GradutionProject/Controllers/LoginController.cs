@@ -82,7 +82,7 @@ public class LoginController : ControllerBase
         var course = professor.Lectures?.FirstOrDefault(); 
         int? courseId = course?.Id;
 
-        var token = GenerateJwtToken(professor.Id.ToString(), professor.Email, professor.Phone, "Professor", collegeId, courseId);
+        var token = GenerateJwtToken(professor.Id.ToString(), professor.Email, professor.Phone, "Professor", collegeId);
 
         return Result.Success<object>(new
         {
