@@ -20,6 +20,30 @@ namespace GradutionProject.Services.StudentService
 
         public async Task<IEnumerable<StudentDto>> GetAllAsync(int page, int pageSize)
         {
+            var students = await _context.NewStudents
+                .Include(s => s.College)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return students.Select(s => new StudentDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Email = s.Email,
+                Gender = (int?)s.Gender,
+                CollegeId = s.College?.Name,
+                PhoneNumber = s.PhoneNumber,
+                Birth = s.Birth,
+                CertificateDate = s.CertificateDate,
+                NationalId = s.NationalId,
+                CertificateImgBase64 = s.CertificateImg != null ? Convert.ToBase64String(s.CertificateImg) : null,
+                PersonalPhotoBase64 = s.PersonalPhoto != null ? Convert.ToBase64String(s.PersonalPhoto) : null,
+                InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
+            });
+        }
+        public async Task<IEnumerable<StudentDto>> GetAllStudentAsync(int page, int pageSize)
+        {
             var students = await _context.Students
                 .Include(s => s.College)
                 .Skip((page - 1) * pageSize)
@@ -28,6 +52,7 @@ namespace GradutionProject.Services.StudentService
 
             return students.Select(s => new StudentDto
             {
+                Id = s.Id,
                 Name = s.Name,
                 Email = s.Email,
                 Gender = (int?)s.Gender,

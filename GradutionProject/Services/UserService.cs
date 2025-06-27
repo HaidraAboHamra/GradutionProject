@@ -24,6 +24,7 @@ public class UserService
         _context = context;
         _passwordHasher = new PasswordHasher<Student>();
         _passwordHasherAdmin = new PasswordHasher<Admin>();
+        _passwordHasherProfessor = new PasswordHasher<Professor>();
     }
 
     public async Task<Student> CreateUserAsync(Student student)
@@ -67,9 +68,9 @@ public class UserService
             return null;
         }
 
-        var result = _passwordHasherAdmin.VerifyHashedPassword(admin, admin.Password, password);
+        //var result = _passwordHasherAdmin.VerifyHashedPassword(admin, admin.Password, password);
 
-        return result == PasswordVerificationResult.Success ? admin : null;
+        return admin;
     }
     public async Task<Professor?> LoginProfessorAsync(string email, string password)
     {

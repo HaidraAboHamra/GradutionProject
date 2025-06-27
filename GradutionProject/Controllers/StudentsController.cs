@@ -29,7 +29,12 @@ public class StudentController : ControllerBase
         var result = await _studentService.GetAllAsync(page, pageSize);
         return Ok(result);
     }
-
+    [HttpGet("accepted")]
+    public async Task<IActionResult> GetAllStudent([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        var result = await _studentService.GetAllStudentAsync(page, pageSize);
+        return Ok(result);
+    }
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -94,7 +99,7 @@ public class StudentRegisterDto
 }
 public class StudentDto
 {
-
+    public int Id { get; set; }
     public string? Name { get; set; }
     public string? Email { get; set; }
     public int? Gender { get; set; }

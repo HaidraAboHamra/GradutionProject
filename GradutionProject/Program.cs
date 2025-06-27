@@ -4,6 +4,7 @@ using GradutionProject.Interfaces;
 using GradutionProject.Services;
 using GradutionProject.Services.AdminService;
 using GradutionProject.Services.ProfessorService;
+using GradutionProject.Services.StudentService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +56,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<IProfessorService, ProfessorService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IPasswordHasher<Admin>, PasswordHasher<Admin>>();
 builder.Services.AddSwaggerGen(c =>
@@ -92,7 +94,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
-app.UseAuthentication(); 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
