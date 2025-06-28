@@ -84,6 +84,13 @@ public class CollegesController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
+    private int? GetClaimValue(string claimType)
+    {
+        var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+        if (claim != null && int.TryParse(claim.Value, out int value))
+            return value;
+        return null;
+    }
     public class CollegeDto
     {
         public string Name { get; set; }

@@ -61,7 +61,13 @@ namespace GradutionProject.Controllers
                 return NotFound(new { message = $"Professor with ID {id} not found." });
             return NoContent();
         }
-
+        private int? GetClaimValue(string claimType)
+        {
+            var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+            if (claim != null && int.TryParse(claim.Value, out int value))
+                return value;
+            return null;
+        }
     }
     public class ProfessorDto
     {
@@ -71,6 +77,7 @@ namespace GradutionProject.Controllers
         public string Email { get; set; }
         public int? CollegeId { get; set; }
         public string? CollegeName { get; internal set; }
+        public string? CoursName { get; internal set; }
     }
 
     public class CreateProfessorDto

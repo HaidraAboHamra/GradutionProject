@@ -20,13 +20,16 @@ public class NewsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult> GetAll(
-        int pageNumber = 1,
-        int pageSize = 10,
-        DateTime? date = null)
+       int pageNumber = 1,
+       int pageSize = 10,
+       DateTime? date = null)
     {
         try
         {
-            var query = _db.News.AsQueryable();
+            var query = _db.News
+                .Include(n => n.Admin)
+                .Include(n => n.Professor)
+                .AsQueryable();
 
             if (date.HasValue)
             {
@@ -47,7 +50,8 @@ public class NewsController : ControllerBase
                 {
                     n.Description,
                     n.CreatedDate,
-                    AdminName = n.Admin.Name 
+                    PublisherName = n.Admin != null ? n.Admin.Name :
+                                    n.Professor != null ? n.Professor.Name : "Unknown"
                 })
                 .ToListAsync();
 
@@ -64,7 +68,8 @@ public class NewsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-    [Authorize(Roles = "Admin")]
+
+    [Authorize(Roles = "Admin,Professor")]
     [HttpPost]
     public async Task<ActionResult> CreateNews([FromBody] CreateNewsDto dto)
     {
@@ -73,19 +78,31 @@ public class NewsController : ControllerBase
 
         try
         {
-            var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(adminIdClaim))
-                return Unauthorized(new { message = "AdminId not found in token." });
-
-            int adminId = int.Parse(adminIdClaim);
-
             var news = new News
             {
                 Description = dto.Description,
-                AdminId = adminId,
                 CreatedDate = DateTime.UtcNow,
                 LastModifiedDate = DateTime.UtcNow
             };
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userRole))
+                return Unauthorized(new { message = "Invalid token data." });
+
+            if (userRole == "Admin")
+            {
+                news.AdminId = int.Parse(userId);
+            }
+            else if (userRole == "Professor")
+            {
+                news.ProfessorId = int.Parse(userId);
+            }
+            else
+            {
+                return Forbid();
+            }
 
             _db.News.Add(news);
             await _db.SaveChangesAsync();
@@ -101,6 +118,14 @@ public class NewsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    private int? GetClaimValue(string claimType)
+    {
+        var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+        if (claim != null && int.TryParse(claim.Value, out int value))
+            return value;
+        return null;
     }
 
     public class CreateNewsDto

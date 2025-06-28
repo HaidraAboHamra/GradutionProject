@@ -19,20 +19,21 @@
 
         public async Task<IEnumerable<ProfessorDto>> GetAllAsync()
         {
-            return await _context.Professors.Include(p => p.College).Select(p => new ProfessorDto
+            return await _context.Professors.Include(p => p.College).Include(p=>p.Cours).Select(p => new ProfessorDto
             {
                 Id = p.Id,
                 Name = p.Name,
                 Email = p.Email,
                 Phone = p.Phone,
                 CollegeId = p.CollegeId,
-                CollegeName = p.College.Name
+                CollegeName = p.College.Name,
+                CoursName = p.Cours.Name
             }).ToListAsync();
         }
 
         public async Task<ProfessorDto?> GetByIdAsync(int id)
         {
-            var p = await _context.Professors.Include(p => p.College).FirstOrDefaultAsync(p => p.Id == id);
+            var p = await _context.Professors.Include(p => p.College).Include(p => p.Cours).FirstOrDefaultAsync(p => p.Id == id);
             if (p == null) return null;
 
             return new ProfessorDto
@@ -42,7 +43,8 @@
                 Email = p.Email,
                 Phone = p.Phone,
                 CollegeId = p.CollegeId,
-                CollegeName = p.College?.Name
+                CollegeName = p.College?.Name,
+                CoursName = p.Cours.Name
             };
         }
 

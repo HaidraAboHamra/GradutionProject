@@ -65,6 +65,13 @@ public class AdminsController : ControllerBase
             return NotFound(new { message = $"Admin with ID {id} not found." });
         return NoContent();
     }
+    private int? GetClaimValue(string claimType)
+    {
+        var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+        if (claim != null && int.TryParse(claim.Value, out int value))
+            return value;
+        return null;
+    }
     private bool AdminExists(int id)
     {
         return _context.Admins.Any(e => e.Id == id);

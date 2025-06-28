@@ -59,6 +59,7 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IPasswordHasher<Admin>, PasswordHasher<Admin>>();
+builder.Services.AddScoped<IEmailService, GmailEmailService>();
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

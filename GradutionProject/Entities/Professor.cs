@@ -15,5 +15,6 @@ namespace GradutionProject.Entities
         public int? CollegeId { get; set; }
         public College College { get; set; }
         public List<Lecture> Lectures { get; set; }
+        public Cours Cours { get; set; }
     }
 }

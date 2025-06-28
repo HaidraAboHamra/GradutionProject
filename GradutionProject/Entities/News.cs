@@ -5,10 +5,15 @@ namespace GradutionProject.Entities
 {
     public class News : Entity
     {
-        public int AdminId { get; set; }
+        public int? AdminId { get; set; }
         public string Description { get; set; }
 
         [ForeignKey("AdminId")]
-        public Admin Admin { get; set; }
+        public Admin? Admin { get; set; }
+        public int? ProfessorId { get; set; }
+
+        [ForeignKey("ProfessorId")]
+        public Professor? Professor { get; set; }
+
     }
 }

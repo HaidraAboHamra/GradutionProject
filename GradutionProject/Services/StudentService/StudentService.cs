@@ -11,17 +11,21 @@ namespace GradutionProject.Services.StudentService
     {
         private readonly ApplicationDbContext _context;
         private readonly IPasswordService _passwordService;
+        private readonly IEmailService _emailService;
 
-        public StudentService(ApplicationDbContext context, IPasswordService passwordService)
+
+        public StudentService(ApplicationDbContext context, IPasswordService passwordService, IEmailService emailService)
         {
             _context = context;
             _passwordService = passwordService;
+            _emailService = emailService;
         }
 
-        public async Task<IEnumerable<StudentDto>> GetAllAsync(int page, int pageSize)
+        public async Task<IEnumerable<StudentDto>> GetAllAsync(int collegeId, int page, int pageSize)
         {
             var students = await _context.NewStudents
                 .Include(s => s.College)
+                .Where(x => x.CollegeId == collegeId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -42,10 +46,11 @@ namespace GradutionProject.Services.StudentService
                 InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
             });
         }
-        public async Task<IEnumerable<StudentDto>> GetAllStudentAsync(int page, int pageSize)
+        public async Task<IEnumerable<StudentDto>> GetAllStudentAsync(int collegeId, int page, int pageSize)
         {
             var students = await _context.Students
                 .Include(s => s.College)
+                .Where(x => x.CollegeId == collegeId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -90,6 +95,36 @@ namespace GradutionProject.Services.StudentService
                 InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
             };
         }
+        public async Task<List<StudentDto>> SearchByNameAsync(int collegeId, string name)
+        {
+            var query = _context.Students
+                .Include(s => s.College)
+                .Where(x => x.CollegeId == collegeId)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var loweredName = name.ToLower();
+                query = query.Where(s => s.Name.ToLower().Contains(loweredName));
+            }
+
+            var students = await query.Select(student => new StudentDto
+            {
+                Name = student.Name,
+                Email = student.Email,
+                Gender = (int?)student.Gender,
+                CollegeId = student.College.Name,
+                PhoneNumber = student.PhoneNumber,
+                Birth = student.Birth,
+                CertificateDate = student.CertificateDate,
+                NationalId = student.NationalId,
+                CertificateImgBase64 = student.CertificateImg != null ? Convert.ToBase64String(student.CertificateImg) : null,
+                PersonalPhotoBase64 = student.PersonalPhoto != null ? Convert.ToBase64String(student.PersonalPhoto) : null,
+                InvoiceBase64 = student.Invoice != null ? Convert.ToBase64String(student.Invoice) : null
+            }).ToListAsync();
+
+            return students;
+        }
 
         public async Task<int> RegisterAsync(StudentRegisterDto dto)
         {
@@ -97,7 +132,7 @@ namespace GradutionProject.Services.StudentService
             {
                 Name = dto.Name,
                 Email = dto.Email,
-                PasswordHash = _passwordService.HashPassword(dto.PasswordHash!),
+                PasswordHash = _passwordService.HashPassword(dto.NationalId!),
                 Gender = (Gender?)dto.Gender,
                 CollegeId = dto.College,
                 PhoneNumber = dto.PhoneNumber,
@@ -139,25 +174,51 @@ namespace GradutionProject.Services.StudentService
             _context.Students.Add(student);
             _context.NewStudents.Remove(newStudent);
             await _context.SaveChangesAsync();
-
+            try
+            {
+                string subject = "Your Authontication Details";
+                string body = $"Dear {student.Name},\n Your Email is {student.Email} And Your Password Is {student.NationalId} \n Please Change Your Password in First Login";
+                await _emailService.SendEmailAsync(student.Email, subject, body);
+            }
+            catch(Exception ex)
+            {
+                return student.Id;
+            }
             return student.Id;
         }
 
-        public async Task<bool> UpdateAsync(int id, StudentRegisterDto dto)
+        public async Task<bool> UpdateAsync(int collegeId, int id, StudentRegisterDto dto)
         {
             var student = await _context.Students.FindAsync(id);
-            if (student == null)
+            if (student is null)
                 return false;
 
-            student.Name = dto.Name;
-            student.Email = dto.Email;
-            student.PasswordHash = _passwordService.HashPassword(dto.PasswordHash!);
-            student.Gender = (Gender?)dto.Gender;
-            student.CollegeId = dto.College;
-            student.PhoneNumber = dto.PhoneNumber;
-            student.Birth = dto.Birth;
-            student.CertificateDate = dto.CertificateDate;
-            student.NationalId = dto.NationalId;
+            if (collegeId != student.CollegeId)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(dto.Name) && student.Name != dto.Name)
+                student.Name = dto.Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Email) && student.Email != dto.Email)
+                student.Email = dto.Email;
+
+            if (dto.Gender != null && student.Gender != (Gender?)dto.Gender)
+                student.Gender = (Gender?)dto.Gender;
+
+            if (dto.College.HasValue && student.CollegeId != dto.College.Value)
+                student.CollegeId = dto.College.Value;
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber) && student.PhoneNumber != dto.PhoneNumber)
+                student.PhoneNumber = dto.PhoneNumber;
+
+            if (dto.Birth != null && student.Birth != dto.Birth)
+                student.Birth = dto.Birth;
+
+            if (dto.CertificateDate != null && student.CertificateDate != dto.CertificateDate)
+                student.CertificateDate = dto.CertificateDate;
+
+            if (!string.IsNullOrWhiteSpace(dto.NationalId) && student.NationalId != dto.NationalId)
+                student.NationalId = dto.NationalId;
 
             if (dto.CertificateImg != null)
                 student.CertificateImg = await ToBytes(dto.CertificateImg);
@@ -168,9 +229,17 @@ namespace GradutionProject.Services.StudentService
             if (dto.Invoice != null)
                 student.Invoice = await ToBytes(dto.Invoice);
 
+            if (!string.IsNullOrWhiteSpace(dto.PasswordHash))
+            {
+                var hashed = _passwordService.HashPassword(dto.PasswordHash);
+                if (student.PasswordHash != hashed)
+                    student.PasswordHash = hashed;
+            }
+
             await _context.SaveChangesAsync();
             return true;
         }
+
 
         public async Task<bool> DeleteAsync(int id)
         {

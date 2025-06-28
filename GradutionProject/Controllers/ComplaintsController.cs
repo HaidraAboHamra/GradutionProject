@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GradutionProject.Controllers;
@@ -17,9 +18,17 @@ public class ComplaintsController : ControllerBase
     {
         _db = applicationDbContext;
     }
+    [Authorize(Roles ="Admin")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ComplaintDto>>> GetAll(int pageNumber = 1, int pageSize = 10)
     {
+        var CollegeId = GetClaimValue("CollegeId");
+        var adminId = GetClaimValue("UserId");
+
+
+        if (CollegeId is null || adminId is null )
+            return Unauthorized(new { message = "Invalid token claims." });
+
         try
         {
             var totalCount = await _db.Complaints.CountAsync();
@@ -29,13 +38,14 @@ public class ComplaintsController : ControllerBase
 
             var result = await _db.Complaints
                 .OrderBy(c => c.CreatedDate) 
+                .Where(x=>x.Student.CollegeId == CollegeId)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
             var complaints = result.Select(s => new ComplaintDto
             {
-                StudentId = s.StudentId,
+                StudentName = s.Student.Name,
                 Description = s.Description,
             });
 
@@ -55,11 +65,15 @@ public class ComplaintsController : ControllerBase
 
     [Authorize(Roles ="Student")]
     [HttpPost]
-    public async Task<ActionResult> Create(ComplaintDto complaintDto)
+    public async Task<ActionResult> Create(CreateComplaintDto complaintDto)
     {
+        var studentId = GetClaimValue("UserId");
+
+        if (studentId == null )
+            return Unauthorized(new { message = "Invalid token claims." });
         var complaint = new Complaint
         {
-            StudentId = (int)complaintDto.StudentId,
+            StudentId = (int)studentId,
             Description = complaintDto.Description,
         };
         try
@@ -73,9 +87,20 @@ public class ComplaintsController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+    private int? GetClaimValue(string claimType)
+    {
+        var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+        if (claim != null && int.TryParse(claim.Value, out int value))
+            return value;
+        return null;
+    }
+    public class CreateComplaintDto
+    {
+        public string Description { get; set; }
+    }
     public class ComplaintDto
     {
-        public int? StudentId { get; set; }
+        public string StudentName { get; set; }
         public string Description { get; set; }
     }
 }

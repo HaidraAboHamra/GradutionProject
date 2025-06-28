@@ -2,6 +2,7 @@
 using GradutionProject.Entities;
 using GradutionProject.Entities.Enums;
 using GradutionProject.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,24 +23,54 @@ public class StudentController : ControllerBase
     {
         _studentService = studentService;
     }
-
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _studentService.GetAllAsync(page, pageSize);
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
+        var result = await _studentService.GetAllAsync((int)collegeId, page, pageSize);
         return Ok(result);
     }
     [HttpGet("accepted")]
     public async Task<IActionResult> GetAllStudent([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var result = await _studentService.GetAllStudentAsync(page, pageSize);
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
+        var result = await _studentService.GetAllStudentAsync((int)collegeId, page, pageSize);
         return Ok(result);
     }
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
         var result = await _studentService.GetByIdAsync(id);
         return result is null ? NotFound(new { message = "Student not found." }) : Ok(result);
+    }
+    [HttpGet("{name}")]
+    public async Task<IActionResult> GetByName(string name)
+    {
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
+        var result = await _studentService.SearchByNameAsync((int)collegeId, name);
+
+        if (result == null || result.Count == 0)
+            return NotFound(new { message = "No students found with this name." });
+
+        return Ok(result);
     }
 
     [HttpPost("register")]
@@ -63,12 +94,17 @@ public class StudentController : ControllerBase
             return NotFound(new { message = "Student not found." });
         }
     }
-
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromForm] StudentRegisterDto dto)
     {
+        var collegeId = GetClaimValue("CollegeId");
+
+        if (collegeId == null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var success = await _studentService.UpdateAsync(id, dto);
+        var success = await _studentService.UpdateAsync((int)collegeId, id, dto);
         return success ? Ok(new { message = "Updated" }) : NotFound(new { message = "Student not found." });
     }
 
@@ -77,6 +113,13 @@ public class StudentController : ControllerBase
     {
         var success = await _studentService.DeleteAsync(id);
         return success ? Ok(new { message = "Deleted" }) : NotFound(new { message = "Student not found." });
+    }
+    private int? GetClaimValue(string claimType)
+    {
+        var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+        if (claim != null && int.TryParse(claim.Value, out int value))
+            return value;
+        return null;
     }
 }
 
