@@ -7,8 +7,8 @@ namespace GradutionProject.Entities;
 public class GradeOfStudent: Entity
 {
 
-    public decimal DegreeOfStudiom { get; set; } = 0;
-    public decimal DegreeOfLabs { get; set; } = 0;
+    public decimal DegreeOfStudiom { get; set; }
+    public decimal DegreeOfLabs { get; set; } 
     public int StudentId { get; set; }
     public int CoursesId { get; set; }
     [ForeignKey("StudentId")]

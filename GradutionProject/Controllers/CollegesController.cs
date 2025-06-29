@@ -18,38 +18,79 @@ public class CollegesController : ControllerBase
     public CollegesController(ApplicationDbContext context) => _context = context;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _context.Colleges.ToListAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var colleges = await _context.Colleges
+            .Include(c => c.Students)
+            .Include(c => c.Professsors)
+            .Select(c => new CollegeResponseDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                YearOfStudy = c.YearOfStudy,
+                StudentCount = c.Students.Count,
+                ProfessorCount = c.Professsors.Count
+            }).ToListAsync();
+
+        return Ok(colleges);
+    }
+
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var college = await _context.Colleges.Include(c => c.Students).Include(c => c.Professsors).FirstOrDefaultAsync(c => c.Id == id);
-        return college == null ? NotFound() : Ok(college);
+        var college = await _context.Colleges
+            .Include(c => c.Students)
+            .Include(c => c.Professsors)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (college == null)
+            return NotFound();
+
+        var dto = new CollegeResponseDto
+        {
+            Id = college.Id,
+            Name = college.Name,
+            Description = college.Description,
+            YearOfStudy = college.YearOfStudy,
+            StudentCount = college.Students.Count,
+            ProfessorCount = college.Professsors.Count
+        };
+
+        return Ok(dto);
     }
+
     [Authorize]
     [HttpGet("mycollege")]
     public async Task<IActionResult> GetMyCollege()
     {
-        var claims = User.Claims.ToList();
-
-        foreach (var claim in claims)
-        {
-            Console.WriteLine($"{claim.Type} : {claim.Value}");
-        }
-
-        var role = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-        var collegeId = claims.FirstOrDefault(c => c.Type == "CollegeId")?.Value;
+        var collegeId = User.Claims.FirstOrDefault(c => c.Type == "CollegeId")?.Value;
 
         if (string.IsNullOrEmpty(collegeId) || !int.TryParse(collegeId, out var id))
             return Unauthorized(new { message = "CollegeId not found in token." });
 
-        var college = await _context.Colleges.FindAsync(id);
+        var college = await _context.Colleges
+            .Include(c => c.Students)
+            .Include(c => c.Professsors)
+            .FirstOrDefaultAsync(c => c.Id == id);
 
         if (college == null)
             return NotFound("College not found.");
 
-        return Ok(college);
+        var dto = new CollegeResponseDto
+        {
+            Id = college.Id,
+            Name = college.Name,
+            Description = college.Description,
+            YearOfStudy = college.YearOfStudy,
+            StudentCount = college.Students.Count,
+            ProfessorCount = college.Professsors.Count
+        };
+
+        return Ok(dto);
     }
+
 
     [HttpPost]
     public async Task<IActionResult> Create(CollegeDto dto)
@@ -89,6 +130,15 @@ public class CollegesController : ControllerBase
         if (claim != null && int.TryParse(claim.Value, out int value))
             return value;
         return null;
+    }
+    public class CollegeResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int YearOfStudy { get; set; }
+        public int StudentCount { get; set; }
+        public int ProfessorCount { get; set; }
     }
     public class CollegeDto
     {

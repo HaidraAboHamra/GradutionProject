@@ -17,17 +17,40 @@ public class LectureController : ControllerBase
         _context = context;
     }
 
-    // GET: api/Lecture
+    // GET: api/Lecture?query=someText&pageNumber=1&pageSize=10
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LectureDto>>> GetLectures()
+    public async Task<ActionResult<IEnumerable<LectureDto>>> GetLectures(
+        [FromQuery] string? query,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         var claims = GetUserClaims();
 
-
         if (claims is null)
             return Unauthorized(new { message = "Invalid token claims." });
-        var lectures = await _context.Lectures.ToListAsync();
+
+        var lecturesQuery = _context.Lectures
+            .Include(x => x.College)
+            .Include(x => x.Professsor).ThenInclude(x => x.Cours)
+            .Where(l => l.CollegeId == claims.CollegeId)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            query = query.Trim().ToLower();
+            lecturesQuery = lecturesQuery.Where(l =>
+                l.Name.ToLower().Contains(query) ||
+                (l.Description != null && l.Description.ToLower().Contains(query))
+            );
+        }
+
+        var totalCount = await lecturesQuery.CountAsync();
+
+        var lectures = await lecturesQuery
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
         var result = lectures.Select(l => new LectureDto
         {
@@ -36,36 +59,20 @@ public class LectureController : ControllerBase
             Description = l.Description,
             NumberOfLectures = l.NumberOfLectures,
             ProfessorId = l.ProfessorId,
+            CollegeId = l.CollegeId,
+            ProfessorName = l.Professsor.Name,
+            CoursName = l.Professsor.Cours.Name,
             PdfBase64 = l.Pdf != null ? Convert.ToBase64String(l.Pdf) : null
-        }).Where(x=>x.CollegeId == claims.CollegeId);
+        });
 
-        return Ok(result);
-    }
-
-
-    // GET: api/Lecture/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<LectureDto>> GetLecture(int id)
-    {
-        var lecture = await _context.Lectures.FindAsync(id);
-
-        if (lecture == null)
-            return NotFound();
-
-        var dto = new LectureDto
+        return Ok(new
         {
-            Id = lecture.Id,
-            Name = lecture.Name,
-            Description = lecture.Description,
-            NumberOfLectures = lecture.NumberOfLectures,
-            CollegeId = lecture.CollegeId,
-            ProfessorId = lecture.ProfessorId,
-            PdfBase64 = lecture.Pdf != null ? Convert.ToBase64String(lecture.Pdf) : null
-        };
-
-        return Ok(dto);
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            Data = result
+        });
     }
-
 
     // POST: api/Lecture
     [Authorize]
@@ -107,6 +114,28 @@ public class LectureController : ControllerBase
         return CreatedAtAction(nameof(GetLecture), new { id = lecture.Id }, result);
     }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult<LectureDto>> GetLecture(int id)
+    {
+        var lecture = await _context.Lectures.FindAsync(id);
+
+        if (lecture == null)
+            return NotFound();
+
+        var dto = new LectureDto
+        {
+            Id = lecture.Id,
+            Name = lecture.Name,
+            Description = lecture.Description,
+            NumberOfLectures = lecture.NumberOfLectures,
+            CollegeId = lecture.CollegeId,
+            ProfessorId = lecture.ProfessorId,
+            ProfessorName = lecture.Professsor.Name,
+            PdfBase64 = lecture.Pdf != null ? Convert.ToBase64String(lecture.Pdf) : null
+        };
+
+        return Ok(dto);
+    }
 
     // PUT: api/Lecture/5
     [Authorize]
@@ -209,6 +238,10 @@ public class LectureController : ControllerBase
         public int NumberOfLectures { get; set; }
         public int? CollegeId { get; set; }
         public int? ProfessorId { get; set; }
+        public string? ProfessorName { get; set; }
+        public string? CoursName { get; set; }
+
+
 
         // PDF كـ Base64
         public string? PdfBase64 { get; set; }

@@ -17,6 +17,7 @@ namespace GradutionProject.Data
         public DbSet<Lecture> Lectures { get; set; }
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<News> News { get; set; }
+        public DbSet<GradeOfStudent> GradeOfStudents { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ConfigureEntity();
@@ -26,7 +27,7 @@ namespace GradutionProject.Data
         Id = 1,
         Name = "Admin",
         Email = "Admin@Admin.com",
-        Password = "AQAAAAIAAYagAAAAEORnOyHZWpGTFS206rXM8pdrBz/Y6pJVOVO8gnGRg6hlLw0VLtacH0ZIGx5Rk9/a0A==",
+        Password = "$2a$11$9pZSxyMXmpfXIX9oGamqXONBpqXuOVHpqB9tDTbuwao786IZvpa1q",
         Phone = "999",
         CreatedDate = new DateTime(2024, 01, 01),
         LastModifiedDate = new DateTime(2024, 01, 01)
