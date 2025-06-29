@@ -18,15 +18,14 @@ public class ComplaintsController : ControllerBase
     {
         _db = applicationDbContext;
     }
-    [Authorize(Roles ="Admin")]
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ComplaintDto>>> GetAll(int pageNumber = 1, int pageSize = 10)
     {
-        var CollegeId = GetClaimValue("CollegeId");
-        var adminId = GetClaimValue("UserId");
+        var CollegeId = GetUserClaims();
 
 
-        if (CollegeId is null || adminId is null )
+        if (CollegeId is null)
             return Unauthorized(new { message = "Invalid token claims." });
 
         try
@@ -38,7 +37,8 @@ public class ComplaintsController : ControllerBase
 
             var result = await _db.Complaints
                 .OrderBy(c => c.CreatedDate) 
-                .Where(x=>x.Student.CollegeId == CollegeId)
+                .Where(x=>x.Student.CollegeId == CollegeId.CollegeId)
+                .Include(x=>x.Student)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -63,17 +63,17 @@ public class ComplaintsController : ControllerBase
         }
     }
 
-    [Authorize(Roles ="Student")]
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult> Create(CreateComplaintDto complaintDto)
     {
-        var studentId = GetClaimValue("UserId");
+        var studentId = GetUserClaims();
 
         if (studentId == null )
             return Unauthorized(new { message = "Invalid token claims." });
         var complaint = new Complaint
         {
-            StudentId = (int)studentId,
+            StudentId = (int)studentId.UserId,
             Description = complaintDto.Description,
         };
         try
@@ -94,6 +94,40 @@ public class ComplaintsController : ControllerBase
             return value;
         return null;
     }
+    public class UserClaims
+    {
+        public int? UserId { get; set; }
+        public string Role { get; set; }
+        public int? CollegeId { get; set; }
+    }
+
+    private UserClaims GetUserClaims()
+    {
+        var claims = User.Claims;
+
+        int? userId = null;
+        int? collegeId = null;
+        string role = null;
+
+        var idClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+        if (idClaim != null && int.TryParse(idClaim.Value, out int id))
+            userId = id;
+
+        var roleClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
+        role = roleClaim?.Value;
+
+        var collegeClaim = claims.FirstOrDefault(c => c.Type == "CollegeId");
+        if (collegeClaim != null && int.TryParse(collegeClaim.Value, out int cId))
+            collegeId = cId;
+
+        return new UserClaims
+        {
+            UserId = userId,
+            Role = role,
+            CollegeId = collegeId
+        };
+    }
+
     public class CreateComplaintDto
     {
         public string Description { get; set; }

@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace GradutionProject.Controllers;
-[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class LectureController : ControllerBase
@@ -19,9 +18,15 @@ public class LectureController : ControllerBase
     }
 
     // GET: api/Lecture
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LectureDto>>> GetLectures()
     {
+        var claims = GetUserClaims();
+
+
+        if (claims is null)
+            return Unauthorized(new { message = "Invalid token claims." });
         var lectures = await _context.Lectures.ToListAsync();
 
         var result = lectures.Select(l => new LectureDto
@@ -30,10 +35,9 @@ public class LectureController : ControllerBase
             Name = l.Name,
             Description = l.Description,
             NumberOfLectures = l.NumberOfLectures,
-            CollegeId = l.CollegeId,
             ProfessorId = l.ProfessorId,
             PdfBase64 = l.Pdf != null ? Convert.ToBase64String(l.Pdf) : null
-        });
+        }).Where(x=>x.CollegeId == claims.CollegeId);
 
         return Ok(result);
     }
@@ -68,10 +72,10 @@ public class LectureController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<LectureDto>> CreateLecture([FromForm] CreateLectureDto dto)
     {
-        var professorId = GetClaimValue("UserId");
-        var collegeId = GetClaimValue("CollegeId");
+        var claims = GetUserClaims();
 
-        if (professorId == null || collegeId == null)
+
+        if (claims is null)
             return Unauthorized(new { message = "Invalid token claims." });
 
         byte[]? pdf = await ConvertToBytes(dto.Pdf);
@@ -82,8 +86,8 @@ public class LectureController : ControllerBase
             Description = dto.Description,
             NumberOfLectures = dto.NumberOfLectures,
             Pdf = pdf,
-            CollegeId = collegeId,
-            ProfessorId = professorId
+            CollegeId = claims.CollegeId,
+            ProfessorId = claims.UserId
         };
 
         _context.Lectures.Add(lecture);
@@ -161,6 +165,39 @@ public class LectureController : ControllerBase
         if (claim != null && int.TryParse(claim.Value, out int value))
             return value;
         return null;
+    }
+    public class UserClaims
+    {
+        public int? UserId { get; set; }
+        public string Role { get; set; }
+        public int? CollegeId { get; set; }
+    }
+
+    private UserClaims GetUserClaims()
+    {
+        var claims = User.Claims;
+
+        int? userId = null;
+        int? collegeId = null;
+        string role = null;
+
+        var idClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+        if (idClaim != null && int.TryParse(idClaim.Value, out int id))
+            userId = id;
+
+        var roleClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
+        role = roleClaim?.Value;
+
+        var collegeClaim = claims.FirstOrDefault(c => c.Type == "CollegeId");
+        if (collegeClaim != null && int.TryParse(collegeClaim.Value, out int cId))
+            collegeId = cId;
+
+        return new UserClaims
+        {
+            UserId = userId,
+            Role = role,
+            CollegeId = collegeId
+        };
     }
 
     // LectureDto.cs

@@ -55,9 +55,9 @@ public class UserService
             return null;
         }
 
-        var result = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash, password);
+        //var result = _passwordHasher.VerifyHashedPassword(student, student.PasswordHash, password);
 
-        return result == PasswordVerificationResult.Success ? student : null;
+        return student ;
     }
     public async Task<Admin?> LoginAdminAsync(string email, string password)
     {
@@ -85,6 +85,19 @@ public class UserService
             return 0;
         }
     }
+    public async Task<int?> GetAdmCollegeId(int id)
+    {
+        try
+        {
+            var college = await _context.Colleges.FirstOrDefaultAsync(x => x.AdminId == id);
+            var result = college.Id;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            return 0;
+        }
+    }
     public async Task<Professor?> LoginProfessorAsync(string email, string password)
     {
         var professor = await _context.Professors.FirstOrDefaultAsync(u => u.Email == email);
@@ -94,9 +107,9 @@ public class UserService
             return null;
         }
 
-        var result = _passwordHasherProfessor.VerifyHashedPassword(professor, professor.Password, password);
+        //var result = _passwordHasherProfessor.VerifyHashedPassword(professor, professor.Password, password);
 
-        return result == PasswordVerificationResult.Success ? professor : null;
+        return professor ;
     }
 
     public async Task<Result> ChangePasswordAsync(int studentId/*, string currentPassword*/, string newPassword)
