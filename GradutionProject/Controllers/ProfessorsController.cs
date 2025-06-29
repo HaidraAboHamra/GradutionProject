@@ -22,11 +22,12 @@ namespace GradutionProject.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> GetAll()
+        public async Task<ActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _professorService.GetAllAsync();
-            return Ok(result);
+            var (data, totalPages) = await _professorService.GetAllAsync(page, pageSize);
+            return Ok(new { data, totalPages });
         }
+
 
         [HttpGet("{id}")]
         public async Task<ActionResult> Get(int id)
@@ -40,7 +41,12 @@ namespace GradutionProject.Controllers
         [HttpPost]
         public async Task<ActionResult> Create(CreateProfessorDto dto)
         {
-            var id = await _professorService.CreateAsync(dto);
+            var collegeId = GetClaimValue("CollegeId");
+
+            if (collegeId == null)
+                return Unauthorized(new { message = "Invalid token claims." });
+
+            var id = await _professorService.CreateAsync((int)collegeId, dto);
             return CreatedAtAction(nameof(Get), new { id }, dto);
         }
 

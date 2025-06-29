@@ -17,19 +17,31 @@
             _passwordService = passwordService;
         }
 
-        public async Task<IEnumerable<ProfessorDto>> GetAllAsync()
+        public async Task<(IEnumerable<ProfessorDto> data, int totalPages)> GetAllAsync(int page, int pageSize)
         {
-            return await _context.Professors.Include(p => p.College).Include(p=>p.Cours).Select(p => new ProfessorDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Email = p.Email,
-                Phone = p.Phone,
-                CollegeId = p.CollegeId,
-                CollegeName = p.College.Name,
-                CoursName = p.Cours.Name
-            }).ToListAsync();
+            var totalCount = await _context.Professors.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var professors = await _context.Professors
+                .Include(p => p.College)
+                .Include(p => p.Cours)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new ProfessorDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Email = p.Email,
+                    Phone = p.Phone,
+                    CollegeId = p.CollegeId,
+                    CollegeName = p.College.Name,
+                    CoursName = p.Cours.Name
+                })
+                .ToListAsync();
+
+            return (professors, totalPages);
         }
+
 
         public async Task<ProfessorDto?> GetByIdAsync(int id)
         {
@@ -48,14 +60,14 @@
             };
         }
 
-        public async Task<int> CreateAsync(CreateProfessorDto input)
+        public async Task<int> CreateAsync(int collegeId,CreateProfessorDto input)
         {
             var professor = new Professor
             {
                 Name = input.Name,
                 Email = input.Email,
                 Phone = input.Phone,
-                CollegeId = input.CollegeId,
+                CollegeId = collegeId,
                 Password = _passwordService.HashPassword(input.Password)
             };
             _context.Professors.Add(professor);

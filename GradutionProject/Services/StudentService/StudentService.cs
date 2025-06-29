@@ -163,6 +163,7 @@ namespace GradutionProject.Services.StudentService
                 Gender = newStudent.Gender,
                 YearOfStudy = newStudent.YearOfStudy,
                 PhoneNumber = newStudent.PhoneNumber,
+                CollegeId = newStudent.CollegeId,
                 Birth = newStudent.Birth,
                 CertificateDate = newStudent.CertificateDate,
                 NationalId = newStudent.NationalId,
@@ -248,6 +249,16 @@ namespace GradutionProject.Services.StudentService
                 return false;
 
             _context.Students.Remove(student);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        public async Task<bool> DeleteStudentAsync(int id)
+        {
+            var student = await _context.NewStudents.FindAsync(id);
+            if (student == null)
+                return false;
+
+            _context.NewStudents.Remove(student);
             await _context.SaveChangesAsync();
             return true;
         }

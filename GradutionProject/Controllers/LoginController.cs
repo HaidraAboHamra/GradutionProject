@@ -53,7 +53,7 @@ public class LoginController : ControllerBase
         if (admin == null)
             return Result.Failure<object>(new Error("Invalid email or password"));
 
-        int? collegeId = admin.College?.Id;
+        int? collegeId = await _userService.GetAdminCollegeId(admin.Id);
 
         var token = GenerateJwtToken(admin.Id.ToString(), admin.Email, admin.Phone, "Admin", collegeId);
 

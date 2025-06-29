@@ -12,4 +12,5 @@ public interface IStudentService
     Task<int> PromoteAsync(int newStudentId);
     Task<bool> UpdateAsync(int collegeId, int id, StudentRegisterDto dto);
     Task<bool> DeleteAsync(int id);
+    Task<bool> DeleteStudentAsync(int id);
 }

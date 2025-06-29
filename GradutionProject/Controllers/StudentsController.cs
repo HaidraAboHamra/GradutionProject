@@ -19,32 +19,47 @@ namespace GradutionProject.Controllers;
 public class StudentController : ControllerBase
 {
     private readonly IStudentService _studentService;
-    public StudentController(IStudentService studentService)
+    private readonly ApplicationDbContext _context;
+    public StudentController(IStudentService studentService, ApplicationDbContext context)
     {
         _studentService = studentService;
+        _context = context;
     }
     [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var collegeId = GetClaimValue("CollegeId");
-
         if (collegeId == null)
             return Unauthorized(new { message = "Invalid token claims." });
 
         var result = await _studentService.GetAllAsync((int)collegeId, page, pageSize);
-        return Ok(result);
+        var totalCount = await _context.NewStudents.CountAsync(x => x.CollegeId == (int)collegeId);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        return Ok(new
+        {
+            data = result,
+            totalPages
+        });
     }
+
     [HttpGet("accepted")]
     public async Task<IActionResult> GetAllStudent([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var collegeId = GetClaimValue("CollegeId");
-
         if (collegeId == null)
             return Unauthorized(new { message = "Invalid token claims." });
 
         var result = await _studentService.GetAllStudentAsync((int)collegeId, page, pageSize);
-        return Ok(result);
+        var totalCount = await _context.Students.CountAsync(x => x.CollegeId == (int)collegeId);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        return Ok(new
+        {
+            data = result,
+            totalPages
+        });
     }
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
@@ -107,9 +122,15 @@ public class StudentController : ControllerBase
         var success = await _studentService.UpdateAsync((int)collegeId, id, dto);
         return success ? Ok(new { message = "Updated" }) : NotFound(new { message = "Student not found." });
     }
-
-    [HttpDelete("{id}")]
+    [HttpDelete("new/{id}")]
     public async Task<IActionResult> Delete(int id)
+    {
+        var success = await _studentService.DeleteStudentAsync(id);
+        return success ? Ok(new { message = "Deleted" }) : NotFound(new { message = "Student not found." });
+    }
+
+    [HttpDelete("registered/{id}")]
+    public async Task<IActionResult> DeleteNewStudent(int id)
     {
         var success = await _studentService.DeleteAsync(id);
         return success ? Ok(new { message = "Deleted" }) : NotFound(new { message = "Student not found." });
@@ -121,6 +142,7 @@ public class StudentController : ControllerBase
             return value;
         return null;
     }
+
 }
 
 // DTO

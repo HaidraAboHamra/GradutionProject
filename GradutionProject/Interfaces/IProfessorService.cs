@@ -4,9 +4,9 @@ namespace GradutionProject.Interfaces
 {
     public interface IProfessorService
     {
-        Task<IEnumerable<ProfessorDto>> GetAllAsync();
+        Task<(IEnumerable<ProfessorDto> data, int totalPages)> GetAllAsync(int page, int pageSize);
         Task<ProfessorDto?> GetByIdAsync(int id);
-        Task<int> CreateAsync(CreateProfessorDto input);
+        Task<int> CreateAsync(int collegeId, CreateProfessorDto input);
         Task<bool> UpdateAsync(int id, UpdateProfessorDto input);
         Task<bool> DeleteAsync(int id);
     }

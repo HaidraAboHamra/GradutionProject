@@ -1,5 +1,6 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,18 +45,21 @@ namespace GradutionProject.Controllers
         }
 
         // POST: api/Courses
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult> Create(Cours cours)
         {
+            var collegeId = GetClaimValue("CollegeId");
+
+            if (collegeId == null)
+                return Unauthorized(new { message = "Invalid token claims." });
+            
             if (cours == null)
                 return BadRequest(new { message = "Invalid course data." });
 
-            if (cours.CollegeId.HasValue && !await _context.Colleges.AnyAsync(c => c.Id == cours.CollegeId))
-                return NotFound(new { message = "College not found." });
-
             if (cours.ProfessorId.HasValue && !await _context.Professors.AnyAsync(p => p.Id == cours.ProfessorId))
                 return NotFound(new { message = "Professor not found." });
-
+            cours.CollegeId = collegeId;
             _context.Courses.Add(cours);
             await _context.SaveChangesAsync();
 

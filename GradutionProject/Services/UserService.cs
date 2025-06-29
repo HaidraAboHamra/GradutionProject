@@ -72,6 +72,19 @@ public class UserService
 
         return admin;
     }
+    public async Task<int?> GetAdminCollegeId(int id)
+    {
+        try
+        {
+            var college = await _context.Colleges.FirstOrDefaultAsync(x => x.AdminId == id);
+            var result = college.Id;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            return 0;
+        }
+    }
     public async Task<Professor?> LoginProfessorAsync(string email, string password)
     {
         var professor = await _context.Professors.FirstOrDefaultAsync(u => u.Email == email);
