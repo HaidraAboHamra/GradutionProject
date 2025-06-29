@@ -69,7 +69,6 @@ public class CollegesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, College updatedCollege)
     {
-        if (id != updatedCollege.Id) return BadRequest();
         _context.Entry(updatedCollege).State = EntityState.Modified;
         await _context.SaveChangesAsync();
         return NoContent();
