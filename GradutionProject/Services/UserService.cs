@@ -89,7 +89,51 @@ public class UserService
 
     public async Task<int?> GetAdmCollegeId(int id)
     {
-        // يُفضل حذف هذا التكرار لأنه نفس دالة GetAdminCollegeId
         return await GetAdminCollegeId(id);
+    }
+    public async Task<Result> ChangePasswordByUserAsync(int userId, string currentPassword, string newPassword)
+    {
+        var user = await _context.Students.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return Result.Failure(new Error("User not found"));
+
+        if (!_passwordService.VerifyPassword(user.PasswordHash, currentPassword))
+            return Result.Failure(new Error("Current password is incorrect"));
+
+        user.PasswordHash = _passwordService.HashPassword(newPassword);
+        _context.Students.Update(user);
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ChangePasswordByAdminAsync(int adminId, int targetUserId, string newPassword, string targetRole)
+    {
+
+        if (targetRole.Equals("Student", StringComparison.OrdinalIgnoreCase))
+        {
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == targetUserId);
+            if (student == null)
+                return Result.Failure(new Error("Student not found"));
+
+            student.PasswordHash = _passwordService.HashPassword(newPassword);
+            _context.Students.Update(student);
+        }
+        else if (targetRole.Equals("Professor", StringComparison.OrdinalIgnoreCase))
+        {
+            var professor = await _context.Professors.FirstOrDefaultAsync(p => p.Id == targetUserId);
+            if (professor == null)
+                return Result.Failure(new Error("Professor not found"));
+
+            professor.Password = _passwordService.HashPassword(newPassword);
+            _context.Professors.Update(professor);
+        }
+        else
+        {
+            return Result.Failure(new Error("Invalid target role"));
+        }
+
+        await _context.SaveChangesAsync();
+        return Result.Success();
     }
 }

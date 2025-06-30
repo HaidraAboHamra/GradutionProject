@@ -81,8 +81,8 @@ public class NewsController : ControllerBase
             var news = new News
             {
                 Description = dto.Description,
-                CreatedDate = DateTime.UtcNow,
-                LastModifiedDate = DateTime.UtcNow
+                CreatedDate = DateTime.Now,
+                LastModifiedDate = DateTime.Now
             };
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

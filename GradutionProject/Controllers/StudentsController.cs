@@ -73,20 +73,24 @@ public class StudentController : ControllerBase
         return result is null ? NotFound(new { message = "Student not found." }) : Ok(result);
     }
     [HttpGet("{name}")]
-    public async Task<IActionResult> GetByName(string name)
+    public async Task<IActionResult> GetByName(string name, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var collegeId = GetClaimValue("CollegeId");
 
         if (collegeId == null)
             return Unauthorized(new { message = "Invalid token claims." });
 
-        var result = await _studentService.SearchByNameAsync((int)collegeId, name);
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var result = await _studentService.SearchByNameAsync((int)collegeId, name, pageNumber, pageSize);
 
         if (result == null || result.Count == 0)
             return NotFound(new { message = "No students found with this name." });
 
         return Ok(result);
     }
+
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromForm] StudentRegisterDto dto)

@@ -18,6 +18,8 @@ namespace GradutionProject.Data
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<News> News { get; set; }
         public DbSet<GradeOfStudent> GradeOfStudents { get; set; }
+        public DbSet<GradeAppeal> GradeAppeals { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ConfigureEntity();
@@ -47,7 +49,7 @@ namespace GradutionProject.Data
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedDate = DateTime.UtcNow;
+                    entry.Entity.CreatedDate = DateTime.Now;
                     entry.Entity.LastModifiedDate = DateTime.Now;
                 }
                 else if (entry.State == EntityState.Modified)

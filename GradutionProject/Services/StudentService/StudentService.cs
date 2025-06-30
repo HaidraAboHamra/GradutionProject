@@ -95,7 +95,7 @@ namespace GradutionProject.Services.StudentService
                 InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
             };
         }
-        public async Task<List<StudentDto>> SearchByNameAsync(int collegeId, string name)
+        public async Task<List<StudentDto>> SearchByNameAsync(int collegeId, string name, int pageNumber, int pageSize)
         {
             var query = _context.Students
                 .Include(s => s.College)
@@ -107,6 +107,11 @@ namespace GradutionProject.Services.StudentService
                 var loweredName = name.ToLower();
                 query = query.Where(s => s.Name.ToLower().Contains(loweredName));
             }
+
+            // تطبيق الترقيم
+            query = query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize);
 
             var students = await query.Select(student => new StudentDto
             {
