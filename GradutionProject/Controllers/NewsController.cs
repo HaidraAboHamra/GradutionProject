@@ -20,14 +20,21 @@ public class NewsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult> GetAll(
-       int pageNumber = 1,
-       int pageSize = 10,
-       DateTime? date = null)
+        int pageNumber = 1,
+        int pageSize = 10,
+        DateTime? date = null)
     {
         try
         {
+            var userClaims = GetUserClaims();
+
+            if (!userClaims.CollegeId.HasValue)
+                return Forbid("User does not have a valid CollegeId claim.");
+
+            var collegeId = userClaims.CollegeId.Value;
+
             var query = _db.News
-                .Include(n => n.Admin)
+                .Include(n => n.Admin).ThenInclude(x=>x.College)
                 .Include(n => n.Professor)
                 .AsQueryable();
 
@@ -36,6 +43,10 @@ public class NewsController : ControllerBase
                 var targetDate = date.Value.Date;
                 query = query.Where(n => n.CreatedDate.Date == targetDate);
             }
+
+            query = query.Where(n =>
+                (n.Admin != null && n.Admin.College.Id == collegeId) ||
+                (n.Professor != null && n.Professor.CollegeId == collegeId));
 
             var totalCount = await query.CountAsync();
 
@@ -68,6 +79,7 @@ public class NewsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
 
     [Authorize(Roles = "Admin,Professor")]
     [HttpPost]
@@ -127,7 +139,32 @@ public class NewsController : ControllerBase
             return value;
         return null;
     }
+    private UserClaims GetUserClaims()
+    {
+        var claims = User.Claims;
 
+        int? userId = null;
+        int? collegeId = null;
+        string role = null;
+
+        var idClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+        if (idClaim != null && int.TryParse(idClaim.Value, out int id))
+            userId = id;
+
+        var roleClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
+        role = roleClaim?.Value;
+
+        var collegeClaim = claims.FirstOrDefault(c => c.Type == "CollegeId");
+        if (collegeClaim != null && int.TryParse(collegeClaim.Value, out int cId))
+            collegeId = cId;
+
+        return new UserClaims
+        {
+            UserId = userId,
+            Role = role,
+            CollegeId = collegeId
+        };
+    }
     public class CreateNewsDto
     {
         public string Description { get; set; }
