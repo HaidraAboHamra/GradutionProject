@@ -41,6 +41,18 @@ namespace GradutionProject.Data
            .WithOne(s => s.College)
            .HasForeignKey(s => s.CollegeId)
            .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<GradeAppeal>()
+            .HasOne(ga => ga.Student)
+            .WithMany()
+            .HasForeignKey(ga => ga.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GradeAppeal>()
+                .HasOne(ga => ga.GradeOfStudent)
+                .WithMany()
+                .HasForeignKey(ga => ga.GradeOfStudentId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
         public override int SaveChanges()
         {

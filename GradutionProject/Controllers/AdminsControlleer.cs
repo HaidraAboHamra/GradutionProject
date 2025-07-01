@@ -11,7 +11,6 @@ namespace GradutionProject.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
     public class AdminsController : ControllerBase
     {
         private readonly IAdminService _adminService;

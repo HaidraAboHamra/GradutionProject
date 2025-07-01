@@ -50,7 +50,7 @@ string connectionString = $"Data Source={Environment.MachineName}\\MSSQLSQLSERVE
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.WebHost.UseUrls("http://0.0.0.0:3000");
+builder.WebHost.UseUrls("http://0.0.0.0:5000");
 builder.Services.AddControllers();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<IProfessorService, ProfessorService>();

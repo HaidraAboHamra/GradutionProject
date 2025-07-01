@@ -95,7 +95,7 @@ namespace GradutionProject.Services.StudentService
                 InvoiceBase64 = s.Invoice != null ? Convert.ToBase64String(s.Invoice) : null
             };
         }
-        public async Task<List<StudentDto>> SearchByNameAsync(int collegeId, string name, int pageNumber, int pageSize)
+        public async Task<(List<StudentDto> Students, int TotalCount)> SearchByNameAsync(int collegeId, string name, int pageNumber, int pageSize)
         {
             var query = _context.Students
                 .Include(s => s.College)
@@ -108,27 +108,30 @@ namespace GradutionProject.Services.StudentService
                 query = query.Where(s => s.Name.ToLower().Contains(loweredName));
             }
 
+            // احسب العدد الكلي قبل التقطيع
+            var totalCount = await query.CountAsync();
+
             // تطبيق الترقيم
-            query = query
+            var students = await query
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize);
+                .Take(pageSize)
+                .Select(student => new StudentDto
+                {
+                    Name = student.Name,
+                    Email = student.Email,
+                    Gender = (int?)student.Gender,
+                    CollegeId = student.College.Name,
+                    PhoneNumber = student.PhoneNumber,
+                    Birth = student.Birth,
+                    CertificateDate = student.CertificateDate,
+                    NationalId = student.NationalId,
+                    CertificateImgBase64 = student.CertificateImg != null ? Convert.ToBase64String(student.CertificateImg) : null,
+                    PersonalPhotoBase64 = student.PersonalPhoto != null ? Convert.ToBase64String(student.PersonalPhoto) : null,
+                    InvoiceBase64 = student.Invoice != null ? Convert.ToBase64String(student.Invoice) : null
+                })
+                .ToListAsync();
 
-            var students = await query.Select(student => new StudentDto
-            {
-                Name = student.Name,
-                Email = student.Email,
-                Gender = (int?)student.Gender,
-                CollegeId = student.College.Name,
-                PhoneNumber = student.PhoneNumber,
-                Birth = student.Birth,
-                CertificateDate = student.CertificateDate,
-                NationalId = student.NationalId,
-                CertificateImgBase64 = student.CertificateImg != null ? Convert.ToBase64String(student.CertificateImg) : null,
-                PersonalPhotoBase64 = student.PersonalPhoto != null ? Convert.ToBase64String(student.PersonalPhoto) : null,
-                InvoiceBase64 = student.Invoice != null ? Convert.ToBase64String(student.Invoice) : null
-            }).ToListAsync();
-
-            return students;
+            return (students, totalCount);
         }
 
         public async Task<int> RegisterAsync(StudentRegisterDto dto)

@@ -26,12 +26,12 @@ public class NewsController : ControllerBase
     {
         try
         {
-            var userClaims = GetUserClaims();
+            var collegeId = GetClaimValue("CollegeId");
 
-            if (!userClaims.CollegeId.HasValue)
+            if (collegeId is null)
                 return Forbid("User does not have a valid CollegeId claim.");
 
-            var collegeId = userClaims.CollegeId.Value;
+           
 
             var query = _db.News
                 .Include(n => n.Admin).ThenInclude(x=>x.College)

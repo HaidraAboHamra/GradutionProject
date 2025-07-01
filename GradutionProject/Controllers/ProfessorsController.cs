@@ -28,7 +28,7 @@ namespace GradutionProject.Controllers
             var (data, totalPages) = await _professorService.GetAllAsync(page, pageSize);
             return Ok(new { data, totalPages });
         }
-        [HttpGet("/admin")]
+        [HttpGet("admin")]
         public async Task<ActionResult> GetAllPrfoessorByAdmin([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var collegeId = GetClaimValue("CollegeId");

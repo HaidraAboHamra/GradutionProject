@@ -23,15 +23,21 @@ public class CoursesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetAll([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        var collegeId = GetClaimValue("CollegeId");
+        if (collegeId is null)
+            return Forbid();
+
         var query = _context.Courses
             .Include(c => c.College)
             .Include(c => c.Professsor)
+            .Where(x => x.CollegeId == collegeId)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(c => c.Name.Contains(search));
 
         var totalCount = await query.CountAsync();
+
         var courses = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -39,14 +45,16 @@ public class CoursesController : ControllerBase
 
         var result = _mapper.Map<List<CoursDto>>(courses);
 
+        var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
         return Ok(new
         {
-            totalCount,
-            page,
-            pageSize,
-            data = result
+            data = result,
+            currentPage = page,
+            totalPages = totalPages
         });
     }
+
 
     [HttpGet("{id}")]
     public async Task<ActionResult> GetById(int id)

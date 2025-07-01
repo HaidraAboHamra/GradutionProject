@@ -1,12 +1,11 @@
 ﻿using GradutionProject.Abstractions;
 using GradutionProject.Entities.Enums;
-using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace GradutionProject.Entities
 {
     public class Student : Entity
     {
-
         public string? Name { get; set; }
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
@@ -21,8 +20,10 @@ namespace GradutionProject.Entities
         public byte[]? PersonalPhoto { get; set; }
         public byte[]? Invoice { get; set; }
 
-        ///Relations
+        /// Relations
         public int? CollegeId { get; set; }
-        public College College {get; set;}
+        public virtual College? College { get; set; }
+
+        public virtual ICollection<GradeOfStudent> GradeOfStudents { get; set; } = new List<GradeOfStudent>();
     }
 }

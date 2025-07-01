@@ -25,6 +25,32 @@ public class StudentController : ControllerBase
         _studentService = studentService;
         _context = context;
     }
+    private UserClaims GetUserClaims()
+    {
+        var claims = User.Claims;
+
+        int? userId = null;
+        int? collegeId = null;
+        string role = null;
+
+        var idClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+        if (idClaim != null && int.TryParse(idClaim.Value, out int id))
+            userId = id;
+
+        var roleClaim = claims.FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
+        role = roleClaim?.Value;
+
+        var collegeClaim = claims.FirstOrDefault(c => c.Type == "CollegeId");
+        if (collegeClaim != null && int.TryParse(collegeClaim.Value, out int cId))
+            collegeId = cId;
+
+        return new UserClaims
+        {
+            UserId = userId,
+            Role = role,
+            CollegeId = collegeId
+        };
+    }
     [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
@@ -72,6 +98,37 @@ public class StudentController : ControllerBase
         var result = await _studentService.GetByIdAsync(id);
         return result is null ? NotFound(new { message = "Student not found." }) : Ok(result);
     }
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var claims = GetUserClaims();
+
+        if (claims is null || claims.UserId is null)
+            return Unauthorized(new { message = "Invalid token claims." });
+
+        var student = await _context.Students
+            .Include(s => s.College)
+            .FirstOrDefaultAsync(s => s.Id == claims.UserId.Value);
+
+        if (student is null)
+            return NotFound(new { message = "Student not found." });
+
+        var result = new StudentDto
+        {
+            Id = student.Id,
+            Name = student.Name,
+            Email = student.Email,
+            PhoneNumber = student.PhoneNumber,
+            Birth = student.Birth,
+            CertificateDate = student.CertificateDate,
+            NationalId = student.NationalId,
+            Gender = (int?)student.Gender,
+            CollegeName = student.College?.Name
+        };
+
+        return Ok(result);
+    }
+
     [HttpGet("search/{name}")]
     public async Task<IActionResult> GetByName(string name, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
@@ -83,12 +140,19 @@ public class StudentController : ControllerBase
         if (pageNumber <= 0) pageNumber = 1;
         if (pageSize <= 0) pageSize = 10;
 
-        var result = await _studentService.SearchByNameAsync((int)collegeId, name, pageNumber, pageSize);
+        var (students, totalCount) = await _studentService.SearchByNameAsync((int)collegeId, name, pageNumber, pageSize);
 
-        if (result == null || result.Count == 0)
+        if (students == null || students.Count == 0)
             return NotFound(new { message = "No students found with this name." });
 
-        return Ok(result);
+        var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+        return Ok(new
+        {
+            data = students,
+            currentPage = pageNumber,
+            totalPages = totalPages
+        });
     }
 
 
@@ -182,4 +246,5 @@ public class StudentDto
     public string? CertificateImgBase64 { get; set; }
     public string? PersonalPhotoBase64 { get; set; }
     public string? InvoiceBase64 { get; set; }
+    public string? CollegeName { get; internal set; }
 }

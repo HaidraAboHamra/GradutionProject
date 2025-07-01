@@ -20,10 +20,10 @@ public class LectureController : ControllerBase
     // GET: api/Lecture?query=someText&pageNumber=1&pageSize=10
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LectureDto>>> GetLectures(
-        [FromQuery] string? query,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
+    public async Task<ActionResult> GetLectures(
+     [FromQuery] string? query,
+     [FromQuery] int pageNumber = 1,
+     [FromQuery] int pageSize = 10)
     {
         var claims = GetUserClaims();
 
@@ -46,8 +46,10 @@ public class LectureController : ControllerBase
         }
 
         var totalCount = await lecturesQuery.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var lectures = await lecturesQuery
+            .OrderByDescending(l => l.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -60,19 +62,21 @@ public class LectureController : ControllerBase
             NumberOfLectures = l.NumberOfLectures,
             ProfessorId = l.ProfessorId,
             CollegeId = l.CollegeId,
-            ProfessorName = l.Professsor.Name,
-            CoursName = l.Professsor.Cours.Name,
+            ProfessorName = l.Professsor?.Name,
+            CoursName = l.Professsor?.Cours?.Name,
             PdfBase64 = l.Pdf != null ? Convert.ToBase64String(l.Pdf) : null
         });
 
         return Ok(new
         {
-            TotalCount = totalCount,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            Data = result
+            totalCount,
+            totalPages,
+            pageNumber,
+            pageSize,
+            data = result
         });
     }
+
 
     // POST: api/Lecture
     [Authorize]
@@ -137,36 +141,7 @@ public class LectureController : ControllerBase
         return Ok(dto);
     }
 
-    // PUT: api/Lecture/5
-    [Authorize]
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateLecture(int id, [FromForm] CreateLectureDto dto)
-    {
-        var lecture = await _context.Lectures.FindAsync(id);
-        if (lecture == null)
-            return NotFound();
-
-        var professorId = GetClaimValue("UserId");
-        var collegeId = GetClaimValue("CollegeId");
-
-        if (professorId == null || collegeId == null)
-            return Unauthorized(new { message = "Invalid token claims." });
-
-        byte[]? pdf = await ConvertToBytes(dto.Pdf);
-
-        lecture.Name = dto.Name;
-        lecture.Description = dto.Description;
-        lecture.NumberOfLectures = dto.NumberOfLectures;
-        lecture.Pdf = pdf;
-        lecture.CollegeId = collegeId;
-        lecture.ProfessorId = professorId;
-
-        _context.Entry(lecture).State = EntityState.Modified;
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
+   
     private async Task<byte[]?> ConvertToBytes(IFormFile? file)
     {
         if (file == null || file.Length == 0) return null;

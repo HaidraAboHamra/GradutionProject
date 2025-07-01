@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace GradutionProject.Controllers
 {
@@ -21,22 +22,15 @@ namespace GradutionProject.Controllers
         private UserClaims GetUserClaims()
         {
             var claims = User.Claims;
-            int? userId = null;
-            int? collegeId = null;
-            string role = null;
+            int? userId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value is string idStr && int.TryParse(idStr, out var id) ? id : (int?)null;
 
-            if (int.TryParse(claims.FirstOrDefault(c => c.Type ==
-                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value, out var id))
-                userId = id;
+            var role = claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
 
-            role = claims.FirstOrDefault(c => c.Type ==
-                "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-
-            if (int.TryParse(claims.FirstOrDefault(c => c.Type == "CollegeId")?.Value, out var cId))
-                collegeId = cId;
+            int? collegeId = claims.FirstOrDefault(c => c.Type == "CollegeId")?.Value is string cIdStr && int.TryParse(cIdStr, out var cId) ? cId : (int?)null;
 
             return new() { UserId = userId, Role = role, CollegeId = collegeId };
         }
+
 
         #region Models
 
@@ -103,36 +97,57 @@ namespace GradutionProject.Controllers
             public decimal? NewDegreeOfStudiom { get; set; }
         }
 
- 
+        public class StudentGradeDto
+        {
+            public string CourseName { get; set; }
+            public decimal? GradeOfLab { get; set; }
+            public decimal? GradeOfStudiom { get; set; }
+            public decimal TotalGrade { get; set; }
+        }
+
+        public class PagedResult<T>
+        {
+            public List<T> Items { get; set; }
+            public int TotalCount { get; set; }
+            public int PageNumber { get; set; }
+            public int PageSize { get; set; }
+        }
 
         #endregion
 
         #region Grade Endpoints
 
         [HttpPost("add")]
-        [Authorize]
+        [Authorize(Roles = "Professor")]
         public async Task<IActionResult> AddGrade([FromBody] GradeInputModel model)
         {
-            var claims = GetUserClaims();
-            if (claims.Role != "Professor")
-                return Forbid();
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var uc = GetUserClaims();
-            if (uc.UserId == null) return Unauthorized();
+            if (uc.UserId == null)
+                return Unauthorized();
 
             var course = await _context.Courses
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.ProfessorId == uc.UserId);
 
-            if (course == null) return BadRequest("No course assigned to this professor.");
+            if (course == null)
+                return BadRequest("No course assigned to this professor.");
 
-            if (!await _context.Students.AnyAsync(s => s.Id == model.StudentId))
+            var studentExists = await _context.Students
+                .AsNoTracking()
+                .AnyAsync(s => s.Id == model.StudentId);
+
+            if (!studentExists)
                 return NotFound("Student not found.");
 
-            var exists = await _context.GradeOfStudents
+            var gradeExists = await _context.GradeOfStudents
+                .AsNoTracking()
                 .AnyAsync(g => g.CoursesId == course.Id && g.StudentId == model.StudentId);
 
-            if (exists) return Conflict("Grade already exists for this student in this course.");
+            if (gradeExists)
+                return Conflict("Grade already exists for this student in this course.");
 
             var grade = new GradeOfStudent
             {
@@ -144,7 +159,31 @@ namespace GradutionProject.Controllers
 
             _context.GradeOfStudents.Add(grade);
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "Grade added", GradeId = grade.Id });
+
+            return Ok(new { Message = "Grade added successfully.", GradeId = grade.Id });
+        }
+        [HttpGet("professor-grades")]
+        [Authorize(Roles = "Professor")]
+        public async Task<IActionResult> GetGradesForProfessor()
+        {
+            var uc = GetUserClaims();
+            if (uc.UserId == null) return Unauthorized();
+
+            var grades = await _context.GradeOfStudents
+                .Include(g => g.Student)
+                .Include(g => g.Cours)
+                .Where(g => g.Cours.ProfessorId == uc.UserId)
+                .Select(g => new
+                {
+                    GradeId = g.Id,
+                    StudentName = g.Student.Name,
+                    CourseName = g.Cours.Name,
+                    GradeOfLab = g.DegreeOfLabs,
+                    GradeOfStudiom = g.DegreeOfStudiom
+                })
+                .ToListAsync();
+
+            return Ok(grades);
         }
 
         [HttpGet("transcript/{studentId:int}")]
@@ -163,9 +202,9 @@ namespace GradutionProject.Controllers
             if (pageSize <= 0) pageSize = 10;
 
             var query = _context.GradeOfStudents
+                .AsNoTracking()
                 .Where(g => g.StudentId == studentId)
-                .Include(g => g.Cours)
-                .AsQueryable();
+                .Include(g => g.Cours);
 
             var totalCount = await query.CountAsync();
 
@@ -201,6 +240,7 @@ namespace GradutionProject.Controllers
             var uc = GetUserClaims();
 
             var grade = await _context.GradeOfStudents
+                .AsNoTracking()
                 .Include(g => g.Cours)
                 .Include(g => g.Student)
                 .FirstOrDefaultAsync(g => g.Id == gradeId);
@@ -209,6 +249,7 @@ namespace GradutionProject.Controllers
 
             if (uc.Role == "Professor" && grade.Cours.ProfessorId != uc.UserId)
                 return Forbid();
+
             if (uc.Role == "Student" && grade.StudentId != uc.UserId)
                 return Forbid();
 
@@ -220,6 +261,35 @@ namespace GradutionProject.Controllers
                 grade.DegreeOfLabs,
                 grade.DegreeOfStudiom
             });
+        }
+
+        [HttpGet("student/{studentId}")]
+        [Authorize(Roles = "Professor,Student")]
+        public async Task<IActionResult> GetStudentGrades(int studentId)
+        {
+            var uc = GetUserClaims();
+
+            // Students can only access their own grades
+            if (uc.Role == "Student" && uc.UserId != studentId)
+                return Forbid();
+
+            var grades = await _context.GradeOfStudents
+                .AsNoTracking()
+                .Where(g => g.StudentId == studentId)
+                .Include(g => g.Cours)
+                .Select(g => new StudentGradeDto
+                {
+                    CourseName = g.Cours.Name,
+                    GradeOfLab = g.DegreeOfLabs,
+                    GradeOfStudiom = g.DegreeOfStudiom,
+                    TotalGrade = (g.DegreeOfLabs) + (g.DegreeOfStudiom)
+                })
+                .ToListAsync();
+
+            if (grades.Count == 0)
+                return NotFound(new { Message = "No grades found for this student." });
+
+            return Ok(grades);
         }
 
         #endregion
@@ -285,8 +355,7 @@ namespace GradutionProject.Controllers
                     .ThenInclude(g => g.Cours)
                 .Include(a => a.GradeOfStudent)
                     .ThenInclude(g => g.Student)
-                .Where(a => a.Status == "Pending" && a.GradeOfStudent.Cours.ProfessorId == uc.UserId)
-                .AsQueryable();
+                .Where(a => a.Status == "Pending" && a.GradeOfStudent.Cours.ProfessorId == uc.UserId);
 
             var totalCount = await query.CountAsync();
 
@@ -345,7 +414,7 @@ namespace GradutionProject.Controllers
                 return NotFound("Appeal not found.");
 
             if (appeal.Status != "Pending")
-                return BadRequest("Appeal already decided.");
+                return BadRequest("Appeal has already been decided.");
 
             if (appeal.GradeOfStudent.Cours.ProfessorId != uc.UserId)
                 return Forbid();
@@ -354,6 +423,7 @@ namespace GradutionProject.Controllers
             {
                 if (model.NewDegreeOfLabs.HasValue)
                     appeal.GradeOfStudent.DegreeOfLabs = model.NewDegreeOfLabs.Value;
+
                 if (model.NewDegreeOfStudiom.HasValue)
                     appeal.GradeOfStudent.DegreeOfStudiom = model.NewDegreeOfStudiom.Value;
 
