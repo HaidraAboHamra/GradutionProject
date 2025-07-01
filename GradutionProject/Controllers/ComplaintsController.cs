@@ -62,7 +62,43 @@ public class ComplaintsController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+    [HttpGet("superadmin")]
+    public async Task<ActionResult<IEnumerable<ComplaintDto>>> GetAllBySuperAdmin(int pageNumber = 1, int pageSize = 10)
+    {
 
+        try
+        {
+            var totalCount = await _db.Complaints.CountAsync();
+
+            if (totalCount == 0)
+                return NoContent();
+
+            var result = await _db.Complaints
+                .OrderBy(c => c.CreatedDate)
+                .Include(x => x.Student)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var complaints = result.Select(s => new ComplaintDto
+            {
+                StudentName = s.Student.Name,
+                Description = s.Description,
+            });
+
+            return Ok(new
+            {
+                totalCount,
+                pageNumber,
+                pageSize,
+                data = complaints
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
     [Authorize]
     [HttpPost]
     public async Task<ActionResult> Create(CreateComplaintDto complaintDto)

@@ -1,5 +1,6 @@
 ﻿using GradutionProject.Data;
 using GradutionProject.Entities;
+using GradutionProject.Entities.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,7 @@ public class CollegesController : ControllerBase
                 Name = c.Name,
                 Description = c.Description,
                 YearOfStudy = c.YearOfStudy,
+                AdminName = c.Admin.Name,
                 StudentCount = c.Students.Count,
                 ProfessorCount = c.Professsors.Count
             }).ToListAsync();
@@ -53,6 +55,7 @@ public class CollegesController : ControllerBase
             Id = college.Id,
             Name = college.Name,
             Description = college.Description,
+            AdminName = college.Admin.Name,
             YearOfStudy = college.YearOfStudy,
             StudentCount = college.Students.Count,
             ProfessorCount = college.Professsors.Count
@@ -110,7 +113,16 @@ public class CollegesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, College updatedCollege)
     {
-        _context.Entry(updatedCollege).State = EntityState.Modified;
+        var college = await _context.Colleges.FindAsync(id);
+        if (!string.IsNullOrWhiteSpace(updatedCollege.Name) && college.Name != updatedCollege.Name)
+            college.Name = updatedCollege.Name;
+
+        if (college.YearOfStudy != updatedCollege.YearOfStudy)
+            college.YearOfStudy = updatedCollege.YearOfStudy;
+
+        if (updatedCollege.Description != null && college.Description != updatedCollege.Description)
+            college.Description = updatedCollege.Description;
+        
         await _context.SaveChangesAsync();
         return NoContent();
     }
@@ -136,6 +148,7 @@ public class CollegesController : ControllerBase
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public string AdminName { get; set; }
         public int YearOfStudy { get; set; }
         public int StudentCount { get; set; }
         public int ProfessorCount { get; set; }

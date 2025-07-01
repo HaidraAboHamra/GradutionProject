@@ -43,7 +43,30 @@
             return (professors, totalPages);
         }
 
+        public async Task<(IEnumerable<ProfessorDto> data, int totalPages)> GetAllAsync(int page, int pageSize)
+        {
+            var totalCount = await _context.Professors.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
+            var professors = await _context.Professors
+                .Include(p => p.College)
+                .Include(p => p.Cours)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new ProfessorDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Email = p.Email,
+                    Phone = p.Phone,
+                    CollegeId = p.CollegeId,
+                    CollegeName = p.College.Name,
+                    CoursName = p.Cours.Name
+                })
+                .ToListAsync();
+
+            return (professors, totalPages);
+        }
         public async Task<ProfessorDto?> GetByIdAsync(int id)
         {
             var p = await _context.Professors.Include(p => p.College).Include(p => p.Cours).FirstOrDefaultAsync(p => p.Id == id);
