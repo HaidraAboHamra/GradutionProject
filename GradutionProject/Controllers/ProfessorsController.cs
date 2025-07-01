@@ -24,7 +24,10 @@ namespace GradutionProject.Controllers
         [HttpGet]
         public async Task<ActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var (data, totalPages) = await _professorService.GetAllAsync(page, pageSize);
+            var collegeId = GetClaimValue("CollegeId");
+            if(collegeId is null)
+                return Forbid();
+            var (data, totalPages) = await _professorService.GetAllAsync((int)collegeId,page, pageSize);
             return Ok(new { data, totalPages });
         }
 

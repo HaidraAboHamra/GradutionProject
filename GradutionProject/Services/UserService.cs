@@ -10,11 +10,13 @@ public class UserService
 {
     private readonly ApplicationDbContext _context;
     private readonly IPasswordService _passwordService;
+    private readonly IEmailService _emailService;
 
-    public UserService(ApplicationDbContext context, IPasswordService passwordService)
+    public UserService(ApplicationDbContext context, IPasswordService passwordService, IEmailService emailService)
     {
         _context = context;
         _passwordService = passwordService;
+        _emailService = emailService;
     }
 
     public async Task<Student> CreateUserAsync(Student student)
@@ -118,15 +120,24 @@ public class UserService
 
             student.PasswordHash = _passwordService.HashPassword(newPassword);
             _context.Students.Update(student);
+            await _emailService.SendEmailAsync(student.Email,"Change Your Password",$"Your New Password Is: {newPassword}");
+
         }
         else if (targetRole.Equals("Professor", StringComparison.OrdinalIgnoreCase))
         {
             var professor = await _context.Professors.FirstOrDefaultAsync(p => p.Id == targetUserId);
             if (professor == null)
                 return Result.Failure(new Error("Professor not found"));
+            try
+            {
+                professor.Password = _passwordService.HashPassword(newPassword);
+                _context.Professors.Update(professor);
+            }
+            catch
+            {
 
-            professor.Password = _passwordService.HashPassword(newPassword);
-            _context.Professors.Update(professor);
+            }
+
         }
         else
         {

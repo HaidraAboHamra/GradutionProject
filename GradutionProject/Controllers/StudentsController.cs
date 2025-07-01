@@ -72,7 +72,7 @@ public class StudentController : ControllerBase
         var result = await _studentService.GetByIdAsync(id);
         return result is null ? NotFound(new { message = "Student not found." }) : Ok(result);
     }
-    [HttpGet("{name}")]
+    [HttpGet("search/{name}")]
     public async Task<IActionResult> GetByName(string name, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var collegeId = GetClaimValue("CollegeId");

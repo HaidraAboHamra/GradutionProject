@@ -17,7 +17,7 @@
             _passwordService = passwordService;
         }
 
-        public async Task<(IEnumerable<ProfessorDto> data, int totalPages)> GetAllAsync(int page, int pageSize)
+        public async Task<(IEnumerable<ProfessorDto> data, int totalPages)> GetAllAsync(int collegeId ,int page, int pageSize)
         {
             var totalCount = await _context.Professors.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -25,6 +25,7 @@
             var professors = await _context.Professors
                 .Include(p => p.College)
                 .Include(p => p.Cours)
+                .Where(x=>x.CollegeId == collegeId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new ProfessorDto

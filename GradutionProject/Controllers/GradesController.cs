@@ -110,9 +110,12 @@ namespace GradutionProject.Controllers
         #region Grade Endpoints
 
         [HttpPost("add")]
-        [Authorize(Roles = "Professor")]
+        [Authorize]
         public async Task<IActionResult> AddGrade([FromBody] GradeInputModel model)
         {
+            var claims = GetUserClaims();
+            if (claims.Role != "Professor")
+                return Forbid();
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var uc = GetUserClaims();
