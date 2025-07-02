@@ -138,7 +138,10 @@ namespace GradutionProject.Controllers
             var studentExists = await _context.Students
                 .AsNoTracking()
                 .AnyAsync(s => s.Id == model.StudentId);
-
+            if (model.DegreeOfLabs > course.DegreeOfLabs)
+                return BadRequest();
+            if(model.DegreeOfStudiom > course.DegreeOfStudiom)
+                return BadRequest();
             if (!studentExists)
                 return NotFound("Student not found.");
 
